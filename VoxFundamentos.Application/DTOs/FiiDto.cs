@@ -1,6 +1,9 @@
 namespace VoxFundamentos.Application.DTOs;
 
 public record FiiDto(
+    int RankPvp,
+    int RankDy,
+    decimal RankLevel,
     string Papel,
     string Segmento,
     decimal Cotacao,
@@ -15,3 +18,4 @@ public record FiiDto(
     decimal CapRate,
     decimal VacanciaMedia
 );
+

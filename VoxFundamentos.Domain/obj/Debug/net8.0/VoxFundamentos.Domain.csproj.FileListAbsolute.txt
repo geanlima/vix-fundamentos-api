@@ -5,8 +5,8 @@ C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\VoxFundamentos.Doma
 C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\VoxFundamentos.Domain.AssemblyInfoInputs.cache
 C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\VoxFundamentos.Domain.AssemblyInfo.cs
 C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\VoxFundamentos.Domain.csproj.CoreCompileInputs.cache
+C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\VoxFundamentos.Domain.sourcelink.json
 C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\VoxFundamentos.Domain.dll
 C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\refint\VoxFundamentos.Domain.dll
 C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\VoxFundamentos.Domain.pdb
 C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\ref\VoxFundamentos.Domain.dll
-C:\GSL\VoxFundamentos\VoxFundamentos.Domain\obj\Debug\net8.0\VoxFundamentos.Domain.sourcelink.json

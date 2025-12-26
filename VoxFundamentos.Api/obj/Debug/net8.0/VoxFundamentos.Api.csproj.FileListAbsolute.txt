@@ -40,6 +40,7 @@ C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.Ass
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.csproj.CoreCompileInputs.cache
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.MvcApplicationPartsAssemblyInfo.cs
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.MvcApplicationPartsAssemblyInfo.cache
+C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.sourcelink.json
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\staticwebassets.build.json
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\staticwebassets.development.json
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\staticwebassets\msbuild.VoxFundamentos.Api.Microsoft.AspNetCore.StaticWebAssets.props
@@ -54,4 +55,3 @@ C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\refint\VoxFundamentos.
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.pdb
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.genruntimeconfig.cache
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\ref\VoxFundamentos.Api.dll
-C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.sourcelink.json
