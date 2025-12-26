@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("VoxFundamentos.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+adb42128e1093a784c44e2543cefe0b6a82ea520")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3e0543fa2a67a4c877fdf6889a4aa102bfeb89c7")]
 [assembly: System.Reflection.AssemblyProductAttribute("VoxFundamentos.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("VoxFundamentos.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
