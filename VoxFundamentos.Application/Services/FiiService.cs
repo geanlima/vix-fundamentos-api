@@ -33,4 +33,27 @@ public class FiiService : IFiiService
             f.VacanciaMedia
         ));
     }
+
+    public async Task<FiiDto?> ObterPorPapelAsync(string papel, CancellationToken ct)
+    {
+        var fii = await _repo.ObterPorPapelAsync(papel, ct);
+        if (fii is null) return null;
+
+        return new FiiDto(
+            fii.Papel,
+            fii.Segmento,
+            fii.Cotacao,
+            fii.FfoYield,
+            fii.DividendYield,
+            fii.Pvp,
+            fii.ValorMercado,
+            fii.Liquidez,
+            fii.QuantidadeImoveis,
+            fii.PrecoMetroQuadrado,
+            fii.AluguelMetroQuadrado,
+            fii.CapRate,
+            fii.VacanciaMedia
+        );
+    }
+
 }

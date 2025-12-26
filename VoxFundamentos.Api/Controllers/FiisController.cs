@@ -20,4 +20,15 @@ public class FiisController : ControllerBase
         var data = await _service.ObterFiisAsync(ct);
         return Ok(data);
     }
+
+    [HttpGet("{papel}")]
+    public async Task<IActionResult> GetByPapel(string papel, CancellationToken ct)
+    {
+        var fii = await _service.ObterPorPapelAsync(papel, ct);
+
+        if (fii is null)
+            return NotFound(new { message = $"FII '{papel}' não encontrado." });
+
+        return Ok(fii);
+    }
 }

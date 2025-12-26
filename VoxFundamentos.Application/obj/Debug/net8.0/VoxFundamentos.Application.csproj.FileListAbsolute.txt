@@ -13,3 +13,4 @@ C:\GSL\VoxFundamentos\VoxFundamentos.Application\obj\Debug\net8.0\VoxFundamentos
 C:\GSL\VoxFundamentos\VoxFundamentos.Application\obj\Debug\net8.0\refint\VoxFundamentos.Application.dll
 C:\GSL\VoxFundamentos\VoxFundamentos.Application\obj\Debug\net8.0\VoxFundamentos.Application.pdb
 C:\GSL\VoxFundamentos\VoxFundamentos.Application\obj\Debug\net8.0\ref\VoxFundamentos.Application.dll
+C:\GSL\VoxFundamentos\VoxFundamentos.Application\obj\Debug\net8.0\VoxFundamentos.Application.sourcelink.json

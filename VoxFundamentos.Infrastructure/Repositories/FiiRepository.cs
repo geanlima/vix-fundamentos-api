@@ -73,4 +73,16 @@ public class FiiRepository : IFiiRepository
 
         return "";
     }
+
+    public async Task<Fii?> ObterPorPapelAsync(string papel, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(papel))
+            return null;
+
+        var all = await ObterTodosAsync(ct);
+
+        return all.FirstOrDefault(f =>
+            string.Equals(f.Papel, papel.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
 }

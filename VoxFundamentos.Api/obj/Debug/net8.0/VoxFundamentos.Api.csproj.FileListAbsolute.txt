@@ -54,3 +54,4 @@ C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\refint\VoxFundamentos.
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.pdb
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.genruntimeconfig.cache
 C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\ref\VoxFundamentos.Api.dll
+C:\GSL\VoxFundamentos\VoxFundamentos.Api\obj\Debug\net8.0\VoxFundamentos.Api.sourcelink.json

@@ -15,3 +15,4 @@ C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamen
 C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\refint\VoxFundamentos.Infrastructure.dll
 C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.pdb
 C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\ref\VoxFundamentos.Infrastructure.dll
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.sourcelink.json
