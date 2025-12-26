@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using VoxFundamentos.Domain.Interfaces;
+using VoxFundamentos.Infrastructure.Integrations;
 using VoxFundamentos.Infrastructure.Repositories;
 using VoxFundamentos.Infrastructure.Scraping;
 
@@ -17,6 +18,13 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IFiiRepository, FiiRepository>();
+
+        services.AddHttpClient<BancoCentralSgsClient>(c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(10);
+        });
+
+        services.AddScoped<IIndicadorEconomicoRepository, BancoCentralSgsClient>();
 
         return services;
     }
