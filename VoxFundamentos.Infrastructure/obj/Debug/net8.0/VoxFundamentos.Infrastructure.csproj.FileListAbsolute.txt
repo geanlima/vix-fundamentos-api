@@ -1,0 +1,17 @@
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.csproj.AssemblyReference.cache
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.AssemblyInfoInputs.cache
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.AssemblyInfo.cs
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.csproj.CoreCompileInputs.cache
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\bin\Debug\net8.0\VoxFundamentos.Infrastructure.deps.json
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\bin\Debug\net8.0\VoxFundamentos.Infrastructure.dll
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\bin\Debug\net8.0\VoxFundamentos.Infrastructure.pdb
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\bin\Debug\net8.0\VoxFundamentos.Application.dll
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\bin\Debug\net8.0\VoxFundamentos.Domain.dll
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\bin\Debug\net8.0\VoxFundamentos.Application.pdb
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\bin\Debug\net8.0\VoxFundamentos.Domain.pdb
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFunda.8CAB42D5.Up2Date
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.dll
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\refint\VoxFundamentos.Infrastructure.dll
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\VoxFundamentos.Infrastructure.pdb
+C:\GSL\VoxFundamentos\VoxFundamentos.Infrastructure\obj\Debug\net8.0\ref\VoxFundamentos.Infrastructure.dll

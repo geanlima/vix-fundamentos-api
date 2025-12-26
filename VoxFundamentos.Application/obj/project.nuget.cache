@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "Tra3k++PDvo=",
+  "success": true,
+  "projectFilePath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\gean.lima\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\10.0.1\\microsoft.extensions.dependencyinjection.10.0.1.nupkg.sha512",
+    "C:\\Users\\gean.lima\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.1\\microsoft.extensions.dependencyinjection.abstractions.10.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
