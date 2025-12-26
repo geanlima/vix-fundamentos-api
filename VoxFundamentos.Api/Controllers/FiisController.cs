@@ -31,4 +31,11 @@ public class FiisController : ControllerBase
 
         return Ok(fii);
     }
+
+    [HttpGet("filtrados")]
+    public async Task<IActionResult> GetFiltrados(CancellationToken ct)
+    {
+        var data = await _service.ObterFiisFiltradosAsync(ct);
+        return Ok(data);
+    }
 }
