@@ -1,0 +1,15 @@
+# ===== .NET =====
+bin/
+obj/
+*.dll
+*.pdb
+*.cache
+*.exe
+
+# ===== VS Code =====
+.vscode/
+!.vscode/settings.json
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
