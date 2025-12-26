@@ -6,4 +6,5 @@ public interface IFiiService
 {
     Task<IEnumerable<FiiDto>> ObterFiisAsync(CancellationToken ct);
     Task<FiiDto?> ObterPorPapelAsync(string papel, CancellationToken ct);
+    Task<IEnumerable<FiiDto>> ObterFiisFiltradosAsync(CancellationToken ct);
 }
