@@ -20,39 +20,45 @@ public class FiiService : IFiiService
     // 🔹 Lista completa (sem ranking)
     public async Task<IEnumerable<FiiDto>> ObterFiisAsync(CancellationToken ct)
     {
-        var fiis = await _repo.ObterTodosAsync(ct);
+        var fiis = (await _repo.ObterTodosAsync(ct))
+            .Take(10)
+            .ToList();
 
-        return fiis.Select(f =>
+        const int maxConcorrencia = 4;
+        using var sem = new SemaphoreSlim(maxConcorrencia);
+
+        var tasks = fiis.Select(async f =>
         {
-            var dyMensal = CalcularDyMensal(f.DividendYield);
-            var proventoMensal = CalcularProventoMensal(f.Cotacao, f.DividendYield);
-            var proventoDiario = CalcularProventoDiario(proventoMensal);
+            await sem.WaitAsync(ct);
+            try
+            {
+                var divCota = await _repo.ObterDividendoPorCotaAsync(f.Papel, ct) ?? 0m;
 
-            return new FiiDto(
-                RankPvp: 0,
-                RankDy: 0,
-                RankLevel: 0,
-                Papel: f.Papel,
-                Segmento: f.Segmento,
-                Cotacao: f.Cotacao,
-                FfoYield: f.FfoYield,
-                DividendYield: f.DividendYield,
-                Pvp: f.Pvp,
-                ValorMercado: f.ValorMercado,
-                Liquidez: f.Liquidez,
-                QuantidadeImoveis: f.QuantidadeImoveis,
-                PrecoMetroQuadrado: f.PrecoMetroQuadrado,
-                AluguelMetroQuadrado: f.AluguelMetroQuadrado,
-                CapRate: f.CapRate,
-                VacanciaMedia: f.VacanciaMedia,
+                var proventoMensal = CalcularProventoMensalPeloDivCota(divCota);
+                var proventoDiario = CalcularProventoDiario(proventoMensal);
+                var dyMensal = CalcularDyMensalPeloProvento(f.Cotacao, proventoMensal);
 
-                // ✅ NOVOS CAMPOS
-                DyMensalPercentual: dyMensal,
-                ProventoMensalPorCota: proventoMensal,
-                ProventoDiarioPorCota: proventoDiario
-            );
+                var qtdCotasNumeroMagico = CalcularQtdCotasNumeroMagico(f.Cotacao, proventoMensal);
+                var valorParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, f.Cotacao);
+
+                return new FiiDto(
+                    0, 0, 0,
+                    f.Papel, f.Segmento, f.Cotacao, f.FfoYield, f.DividendYield, f.Pvp,
+                    f.ValorMercado, f.Liquidez, f.QuantidadeImoveis, f.PrecoMetroQuadrado,
+                    f.AluguelMetroQuadrado, f.CapRate, f.VacanciaMedia,
+                    divCota, dyMensal, proventoMensal, proventoDiario,
+                    qtdCotasNumeroMagico, valorParaNumeroMagico
+                );
+            }
+            finally
+            {
+                sem.Release();
+            }
         });
+
+        return await Task.WhenAll(tasks);
     }
+
 
     // 🔹 Buscar FII por papel
     public async Task<FiiDto?> ObterPorPapelAsync(string papel, CancellationToken ct)
@@ -60,9 +66,12 @@ public class FiiService : IFiiService
         var fii = await _repo.ObterPorPapelAsync(papel, ct);
         if (fii is null) return null;
 
-        var dyMensal = CalcularDyMensal(fii.DividendYield);
-        var proventoMensal = CalcularProventoMensal(fii.Cotacao, fii.DividendYield);
+        var proventoMensal = CalcularProventoMensalPeloDivCota(fii.DividendoPorCota);
         var proventoDiario = CalcularProventoDiario(proventoMensal);
+        var dyMensal = CalcularDyMensalPeloProvento(fii.Cotacao, proventoMensal);
+
+        var qtdCotasNumeroMagico = CalcularQtdCotasNumeroMagico(fii.Cotacao, proventoMensal);
+        var valorParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, fii.Cotacao);
 
         return new FiiDto(
             RankPvp: 0,
@@ -82,10 +91,13 @@ public class FiiService : IFiiService
             CapRate: fii.CapRate,
             VacanciaMedia: fii.VacanciaMedia,
 
-            // ✅ NOVOS CAMPOS
+            DividendoPorCota: fii.DividendoPorCota,
             DyMensalPercentual: dyMensal,
             ProventoMensalPorCota: proventoMensal,
-            ProventoDiarioPorCota: proventoDiario
+            ProventoDiarioPorCota: proventoDiario,
+
+            QtdCotasNumeroMagico: qtdCotasNumeroMagico,
+            ValorParaNumeroMagico: valorParaNumeroMagico
         );
     }
 
@@ -102,9 +114,10 @@ public class FiiService : IFiiService
 
         var liquidezMin = 400000m;
 
+        // 1) pega TUDO (rápido: 1 scrape)
         var fiis = await _repo.ObterTodosAsync(ct);
 
-        // 1️⃣ Aplicar filtros
+        // 2) filtra (aqui ainda sem DivCota)
         var baseList = fiis
             .Where(f =>
                 f.DividendYield >= dyMinimo &&
@@ -116,34 +129,61 @@ public class FiiService : IFiiService
             )
             .ToList();
 
-        // 2️⃣ Rank P/VP (menor → maior)
+        if (baseList.Count == 0)
+            return Array.Empty<FiiDto>();
+
+        // 3) rank P/VP e DY usando só a lista filtrada
         var rankPvpMap = baseList
             .OrderBy(f => f.Pvp)
             .Select((f, index) => new { f.Papel, Rank = index + 1 })
             .ToDictionary(x => x.Papel, x => x.Rank, StringComparer.OrdinalIgnoreCase);
 
-        // 3️⃣ Rank DY (maior → menor)
         var rankDyMap = baseList
             .OrderByDescending(f => f.DividendYield)
             .Select((f, index) => new { f.Papel, Rank = index + 1 })
             .ToDictionary(x => x.Papel, x => x.Rank, StringComparer.OrdinalIgnoreCase);
 
-        // 4️⃣ Montar DTO + RankLevel + Proventos
-        var resultado = baseList
+        // 4) calcula RankLevel e pega TOP 10 (sem chamar detalhes ainda!)
+        var top10Base = baseList
             .Select(f =>
             {
                 var rankPvp = rankPvpMap[f.Papel];
                 var rankDy = rankDyMap[f.Papel];
                 var rankLevel = (rankPvp + rankDy) / 2m;
 
-                var dyMensal = CalcularDyMensal(f.DividendYield);
-                var proventoMensal = CalcularProventoMensal(f.Cotacao, f.DividendYield);
+                return new { Fii = f, rankPvp, rankDy, rankLevel };
+            })
+            .OrderBy(x => x.rankLevel)
+            .ThenBy(x => x.rankPvp)
+            .ThenBy(x => x.rankDy)
+            .Take(10)
+            .ToList();
+
+        // 5) agora SIM: só no TOP 10 busca DivCota (detalhes) e calcula derivados
+        const int maxConcorrencia = 4;
+        using var sem = new SemaphoreSlim(maxConcorrencia);
+
+        var tasks = top10Base.Select(async x =>
+        {
+            await sem.WaitAsync(ct);
+            try
+            {
+                var f = x.Fii;
+
+                // 🔥 pega do detalhes (cacheado no repo)
+                var divCota = await _repo.ObterDividendoPorCotaAsync(f.Papel, ct) ?? 0m;
+
+                var proventoMensal = CalcularProventoMensalPeloDivCota(divCota);
                 var proventoDiario = CalcularProventoDiario(proventoMensal);
+                var dyMensal = CalcularDyMensalPeloProvento(f.Cotacao, proventoMensal);
+
+                var qtdCotasNumeroMagico = CalcularQtdCotasNumeroMagico(f.Cotacao, proventoMensal);
+                var valorParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, f.Cotacao);
 
                 return new FiiDto(
-                    RankPvp: rankPvp,
-                    RankDy: rankDy,
-                    RankLevel: rankLevel,
+                    RankPvp: x.rankPvp,
+                    RankDy: x.rankDy,
+                    RankLevel: x.rankLevel,
                     Papel: f.Papel,
                     Segmento: f.Segmento,
                     Cotacao: f.Cotacao,
@@ -158,41 +198,64 @@ public class FiiService : IFiiService
                     CapRate: f.CapRate,
                     VacanciaMedia: f.VacanciaMedia,
 
-                    // ✅ NOVOS CAMPOS
+                    DividendoPorCota: divCota,
                     DyMensalPercentual: dyMensal,
                     ProventoMensalPorCota: proventoMensal,
-                    ProventoDiarioPorCota: proventoDiario
+                    ProventoDiarioPorCota: proventoDiario,
+
+                    QtdCotasNumeroMagico: qtdCotasNumeroMagico,
+                    ValorParaNumeroMagico: valorParaNumeroMagico
                 );
-            })
-            // 5️⃣ Ordenação final pelo RankLevel (menor é melhor)
+            }
+            finally
+            {
+                sem.Release();
+            }
+        });
+
+        // Já volta ordenado (opcional), mas mantém consistência:
+        var top10 = await Task.WhenAll(tasks);
+
+        return top10
             .OrderBy(x => x.RankLevel)
             .ThenBy(x => x.RankPvp)
             .ThenBy(x => x.RankDy)
             .ToList();
-
-        return resultado;
     }
+
 
     // =========================
     // ✅ CÁLCULOS (privados)
     // =========================
 
-    // DY anual (%) -> DY mensal (%)
-    private static decimal CalcularDyMensal(decimal dyAnual)
-        => Math.Round(dyAnual / 12m, 4);
-
-    // Provento mensal (R$ por cota) baseado em DY anual (%)
-    private static decimal CalcularProventoMensal(decimal cotacao, decimal dyAnual)
+    private static decimal CalcularProventoMensalPeloDivCota(decimal dividendoPorCota12m)
     {
-        if (cotacao <= 0 || dyAnual <= 0) return 0m;
-        return Math.Round(cotacao * (dyAnual / 100m) / 12m, 4);
+        if (dividendoPorCota12m <= 0) return 0m;
+        return Math.Round(dividendoPorCota12m / 12m, 2);
     }
 
-    // Provento diário (R$ por cota) baseado no mês atual
+    private static decimal CalcularDyMensalPeloProvento(decimal cotacao, decimal proventoMensal)
+    {
+        if (cotacao <= 0 || proventoMensal <= 0) return 0m;
+        return Math.Round((proventoMensal / cotacao) * 100m, 2);
+    }
+
     private static decimal CalcularProventoDiario(decimal proventoMensal)
     {
         var diasNoMes = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
-        if (diasNoMes <= 0) return 0m;
+        if (diasNoMes <= 0 || proventoMensal <= 0) return 0m;
         return Math.Round(proventoMensal / diasNoMes, 6);
+    }
+
+    private static int CalcularQtdCotasNumeroMagico(decimal cotacao, decimal proventoMensal)
+    {
+        if (cotacao <= 0 || proventoMensal <= 0) return 0;
+        return (int)Math.Ceiling(cotacao / proventoMensal);
+    }
+
+    private static decimal CalcularValorParaNumeroMagico(int qtdCotasNumeroMagico, decimal cotacao)
+    {
+        if (qtdCotasNumeroMagico <= 0 || cotacao <= 0) return 0m;
+        return Math.Round(qtdCotasNumeroMagico * cotacao, 2);
     }
 }

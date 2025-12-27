@@ -16,8 +16,13 @@ public record FiiDto(
     decimal CapRate,
     decimal VacanciaMedia,
 
-    // 🔥 NOVAS COLUNAS
+    // 🔹 Dividendos
+    decimal DividendoPorCota,
     decimal DyMensalPercentual,
     decimal ProventoMensalPorCota,
-    decimal ProventoDiarioPorCota
+    decimal ProventoDiarioPorCota,
+
+    // 🔥 NOVAS COLUNAS (Número Mágico)
+    int QtdCotasNumeroMagico,
+    decimal ValorParaNumeroMagico
 );

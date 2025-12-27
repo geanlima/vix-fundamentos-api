@@ -7,9 +7,12 @@ public static class FiiMapper
 {
     public static FiiDto ToDto(this Fii f)
     {
-        var dyMensal = CalcularDyMensal(f.DividendYield);
-        var proventoMensal = CalcularProventoMensal(f.Cotacao, f.DividendYield);
+        var proventoMensal = CalcularProventoMensalPeloDivCota(f.DividendoPorCota);
         var proventoDiario = CalcularProventoDiario(proventoMensal);
+        var dyMensal = CalcularDyMensalPeloProvento(f.Cotacao, proventoMensal);
+
+        var qtdCotasNumeroMagico = CalcularQtdCotasNumeroMagico(f.Cotacao, proventoMensal);
+        var valorParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, f.Cotacao);
 
         return new FiiDto(
             RankPvp: 0,
@@ -29,26 +32,44 @@ public static class FiiMapper
             CapRate: f.CapRate,
             VacanciaMedia: f.VacanciaMedia,
 
-            // ✅ novos campos
+            DividendoPorCota: f.DividendoPorCota,
             DyMensalPercentual: dyMensal,
             ProventoMensalPorCota: proventoMensal,
-            ProventoDiarioPorCota: proventoDiario
+            ProventoDiarioPorCota: proventoDiario,
+
+            QtdCotasNumeroMagico: qtdCotasNumeroMagico,
+            ValorParaNumeroMagico: valorParaNumeroMagico
         );
     }
 
-    private static decimal CalcularDyMensal(decimal dyAnual)
-        => Math.Round(dyAnual / 12m, 4);
-
-    private static decimal CalcularProventoMensal(decimal cotacao, decimal dyAnual)
+    private static decimal CalcularProventoMensalPeloDivCota(decimal dividendoPorCota12m)
     {
-        if (cotacao <= 0 || dyAnual <= 0) return 0m;
-        return Math.Round(cotacao * (dyAnual / 100m) / 12m, 4);
+        if (dividendoPorCota12m <= 0) return 0m;
+        return Math.Round(dividendoPorCota12m / 12m, 4);
+    }
+
+    private static decimal CalcularDyMensalPeloProvento(decimal cotacao, decimal proventoMensal)
+    {
+        if (cotacao <= 0 || proventoMensal <= 0) return 0m;
+        return Math.Round((proventoMensal / cotacao) * 100m, 4);
     }
 
     private static decimal CalcularProventoDiario(decimal proventoMensal)
     {
         var diasNoMes = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
-        if (diasNoMes <= 0) return 0m;
+        if (diasNoMes <= 0 || proventoMensal <= 0) return 0m;
         return Math.Round(proventoMensal / diasNoMes, 6);
+    }
+
+    private static int CalcularQtdCotasNumeroMagico(decimal cotacao, decimal proventoMensal)
+    {
+        if (cotacao <= 0 || proventoMensal <= 0) return 0;
+        return (int)Math.Ceiling(cotacao / proventoMensal);
+    }
+
+    private static decimal CalcularValorParaNumeroMagico(int qtdCotasNumeroMagico, decimal cotacao)
+    {
+        if (qtdCotasNumeroMagico <= 0 || cotacao <= 0) return 0m;
+        return Math.Round(qtdCotasNumeroMagico * cotacao, 2);
     }
 }
