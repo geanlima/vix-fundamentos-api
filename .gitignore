@@ -1,37 +1,38 @@
-# ===== .NET =====
-bin/
-obj/
-*.dll
-*.pdb
-*.cache
-*.exe
-
-# ===== VS Code =====
-.vscode/
-!.vscode/settings.json
-
-# ===== OS =====
-.DS_Store
-Thumbs.db
-
 # =========================
-# .NET build artifacts
+# .NET / Build artifacts
 # =========================
 bin/
 obj/
+**/bin/
+**/obj/
 
 # =========================
-# Assembly / SourceLink
+# SourceLink / Build metadata
+# =========================
+*.sourcelink.json
+*.deps.json
+*.runtimeconfig.json
+*.generated.*
+*.editorconfig
+
+# =========================
+# AssemblyInfo (gerado)
 # =========================
 *.AssemblyInfo.cs
-*.sourcelink.json
+**/AssemblyInfo.cs
 
 # =========================
-# Visual Studio
+# Visual Studio / VS Code
 # =========================
 .vs/
+.vscode/
+!.vscode/settings.json
 *.user
 *.suo
 *.cache
-*.ilk
-*.log
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
