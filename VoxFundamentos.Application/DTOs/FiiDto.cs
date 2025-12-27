@@ -1,5 +1,3 @@
-namespace VoxFundamentos.Application.DTOs;
-
 public record FiiDto(
     int RankPvp,
     int RankDy,
@@ -16,6 +14,10 @@ public record FiiDto(
     decimal PrecoMetroQuadrado,
     decimal AluguelMetroQuadrado,
     decimal CapRate,
-    decimal VacanciaMedia
-);
+    decimal VacanciaMedia,
 
+    // 🔥 NOVAS COLUNAS
+    decimal DyMensalPercentual,
+    decimal ProventoMensalPorCota,
+    decimal ProventoDiarioPorCota
+);

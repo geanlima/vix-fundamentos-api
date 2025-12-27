@@ -22,24 +22,36 @@ public class FiiService : IFiiService
     {
         var fiis = await _repo.ObterTodosAsync(ct);
 
-        return fiis.Select(f => new FiiDto(
-            RankPvp: 0,
-            RankDy: 0,
-            RankLevel: 0,
-            Papel: f.Papel,
-            Segmento: f.Segmento,
-            Cotacao: f.Cotacao,
-            FfoYield: f.FfoYield,
-            DividendYield: f.DividendYield,
-            Pvp: f.Pvp,
-            ValorMercado: f.ValorMercado,
-            Liquidez: f.Liquidez,
-            QuantidadeImoveis: f.QuantidadeImoveis,
-            PrecoMetroQuadrado: f.PrecoMetroQuadrado,
-            AluguelMetroQuadrado: f.AluguelMetroQuadrado,
-            CapRate: f.CapRate,
-            VacanciaMedia: f.VacanciaMedia
-        ));
+        return fiis.Select(f =>
+        {
+            var dyMensal = CalcularDyMensal(f.DividendYield);
+            var proventoMensal = CalcularProventoMensal(f.Cotacao, f.DividendYield);
+            var proventoDiario = CalcularProventoDiario(proventoMensal);
+
+            return new FiiDto(
+                RankPvp: 0,
+                RankDy: 0,
+                RankLevel: 0,
+                Papel: f.Papel,
+                Segmento: f.Segmento,
+                Cotacao: f.Cotacao,
+                FfoYield: f.FfoYield,
+                DividendYield: f.DividendYield,
+                Pvp: f.Pvp,
+                ValorMercado: f.ValorMercado,
+                Liquidez: f.Liquidez,
+                QuantidadeImoveis: f.QuantidadeImoveis,
+                PrecoMetroQuadrado: f.PrecoMetroQuadrado,
+                AluguelMetroQuadrado: f.AluguelMetroQuadrado,
+                CapRate: f.CapRate,
+                VacanciaMedia: f.VacanciaMedia,
+
+                // ✅ NOVOS CAMPOS
+                DyMensalPercentual: dyMensal,
+                ProventoMensalPorCota: proventoMensal,
+                ProventoDiarioPorCota: proventoDiario
+            );
+        });
     }
 
     // 🔹 Buscar FII por papel
@@ -47,6 +59,10 @@ public class FiiService : IFiiService
     {
         var fii = await _repo.ObterPorPapelAsync(papel, ct);
         if (fii is null) return null;
+
+        var dyMensal = CalcularDyMensal(fii.DividendYield);
+        var proventoMensal = CalcularProventoMensal(fii.Cotacao, fii.DividendYield);
+        var proventoDiario = CalcularProventoDiario(proventoMensal);
 
         return new FiiDto(
             RankPvp: 0,
@@ -64,7 +80,12 @@ public class FiiService : IFiiService
             PrecoMetroQuadrado: fii.PrecoMetroQuadrado,
             AluguelMetroQuadrado: fii.AluguelMetroQuadrado,
             CapRate: fii.CapRate,
-            VacanciaMedia: fii.VacanciaMedia
+            VacanciaMedia: fii.VacanciaMedia,
+
+            // ✅ NOVOS CAMPOS
+            DyMensalPercentual: dyMensal,
+            ProventoMensalPorCota: proventoMensal,
+            ProventoDiarioPorCota: proventoDiario
         );
     }
 
@@ -107,13 +128,17 @@ public class FiiService : IFiiService
             .Select((f, index) => new { f.Papel, Rank = index + 1 })
             .ToDictionary(x => x.Papel, x => x.Rank, StringComparer.OrdinalIgnoreCase);
 
-        // 4️⃣ Montar DTO + RankLevel
+        // 4️⃣ Montar DTO + RankLevel + Proventos
         var resultado = baseList
             .Select(f =>
             {
                 var rankPvp = rankPvpMap[f.Papel];
                 var rankDy = rankDyMap[f.Papel];
                 var rankLevel = (rankPvp + rankDy) / 2m;
+
+                var dyMensal = CalcularDyMensal(f.DividendYield);
+                var proventoMensal = CalcularProventoMensal(f.Cotacao, f.DividendYield);
+                var proventoDiario = CalcularProventoDiario(proventoMensal);
 
                 return new FiiDto(
                     RankPvp: rankPvp,
@@ -131,7 +156,12 @@ public class FiiService : IFiiService
                     PrecoMetroQuadrado: f.PrecoMetroQuadrado,
                     AluguelMetroQuadrado: f.AluguelMetroQuadrado,
                     CapRate: f.CapRate,
-                    VacanciaMedia: f.VacanciaMedia
+                    VacanciaMedia: f.VacanciaMedia,
+
+                    // ✅ NOVOS CAMPOS
+                    DyMensalPercentual: dyMensal,
+                    ProventoMensalPorCota: proventoMensal,
+                    ProventoDiarioPorCota: proventoDiario
                 );
             })
             // 5️⃣ Ordenação final pelo RankLevel (menor é melhor)
@@ -141,5 +171,28 @@ public class FiiService : IFiiService
             .ToList();
 
         return resultado;
+    }
+
+    // =========================
+    // ✅ CÁLCULOS (privados)
+    // =========================
+
+    // DY anual (%) -> DY mensal (%)
+    private static decimal CalcularDyMensal(decimal dyAnual)
+        => Math.Round(dyAnual / 12m, 4);
+
+    // Provento mensal (R$ por cota) baseado em DY anual (%)
+    private static decimal CalcularProventoMensal(decimal cotacao, decimal dyAnual)
+    {
+        if (cotacao <= 0 || dyAnual <= 0) return 0m;
+        return Math.Round(cotacao * (dyAnual / 100m) / 12m, 4);
+    }
+
+    // Provento diário (R$ por cota) baseado no mês atual
+    private static decimal CalcularProventoDiario(decimal proventoMensal)
+    {
+        var diasNoMes = DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month);
+        if (diasNoMes <= 0) return 0m;
+        return Math.Round(proventoMensal / diasNoMes, 6);
     }
 }
