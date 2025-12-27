@@ -13,3 +13,25 @@ obj/
 # ===== OS =====
 .DS_Store
 Thumbs.db
+
+# =========================
+# .NET build artifacts
+# =========================
+bin/
+obj/
+
+# =========================
+# Assembly / SourceLink
+# =========================
+*.AssemblyInfo.cs
+*.sourcelink.json
+
+# =========================
+# Visual Studio
+# =========================
+.vs/
+*.user
+*.suo
+*.cache
+*.ilk
+*.log
