@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Domain\\VoxFundamentos.Domain.csproj",
+      "projectUniqueName": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Domain\\VoxFundamentos.Domain.csproj",
       "projectName": "VoxFundamentos.Domain",
-      "projectPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Domain\\VoxFundamentos.Domain.csproj",
+      "projectPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Domain\\VoxFundamentos.Domain.csproj",
       "packagesPath": "C:\\Users\\gean.lima\\.nuget\\packages\\",
-      "outputPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Domain\\obj\\",
+      "outputPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Domain\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\gean.lima\\AppData\\Roaming\\NuGet\\NuGet.Config"

@@ -970,11 +970,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Infrastructure\\VoxFundamentos.Infrastructure.csproj",
+      "projectUniqueName": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Infrastructure\\VoxFundamentos.Infrastructure.csproj",
       "projectName": "VoxFundamentos.Infrastructure",
-      "projectPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Infrastructure\\VoxFundamentos.Infrastructure.csproj",
+      "projectPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Infrastructure\\VoxFundamentos.Infrastructure.csproj",
       "packagesPath": "C:\\Users\\gean.lima\\.nuget\\packages\\",
-      "outputPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Infrastructure\\obj\\",
+      "outputPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Infrastructure\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\gean.lima\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -989,11 +989,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj": {
-              "projectPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj"
+            "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj": {
+              "projectPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj"
             },
-            "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Domain\\VoxFundamentos.Domain.csproj": {
-              "projectPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Domain\\VoxFundamentos.Domain.csproj"
+            "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Domain\\VoxFundamentos.Domain.csproj": {
+              "projectPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Domain\\VoxFundamentos.Domain.csproj"
             }
           }
         }
