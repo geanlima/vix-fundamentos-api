@@ -13,3 +13,23 @@ obj/
 # ===== OS =====
 .DS_Store
 Thumbs.db
+*.db
+*.db-shm
+*.db-wal
+*.vsidx
+*.v2
+/VoxFundamentos.Api/obj/Debug/net8.0/VoxFundamentos.Api.AssemblyInfo.cs
+*.json
+/VoxFundamentos.Api/obj/Debug/net8.0/VoxFundamentos.Api.GeneratedMSBuildEditorConfig.editorconfig
+/VoxFundamentos.Api/obj/Debug/net8.0/VoxFundamentos.Api.GlobalUsings.g.cs
+/VoxFundamentos.Infrastructure/obj/Debug/net8.0/VoxFundamentos.Infrastructure.AssemblyInfo.cs
+/VoxFundamentos.Domain/obj/Debug/net8.0/VoxFundamentos.Domain.AssemblyInfo.cs
+/VoxFundamentos.Domain/obj/Debug/net8.0/VoxFundamentos.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/VoxFundamentos.Infrastructure/obj/Debug/net8.0/VoxFundamentos.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+/VoxFundamentos.Infrastructure/obj/Debug/net8.0/VoxFundamentos.Infrastructure.GlobalUsings.g.cs
+/VoxFundamentos.Application/obj/Debug/net8.0/VoxFundamentos.Application.AssemblyInfo.cs
+/VoxFundamentos.Application/obj/Debug/net8.0/VoxFundamentos.Application.GeneratedMSBuildEditorConfig.editorconfig
+/VoxFundamentos.Application/obj/Debug/net8.0/VoxFundamentos.Application.GlobalUsings.g.cs
+*.suo
+*.user
+/VoxFundamentos.Domain/obj/Debug/net8.0/VoxFundamentos.Domain.GlobalUsings.g.cs

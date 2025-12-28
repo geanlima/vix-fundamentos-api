@@ -1461,11 +1461,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Api\\VoxFundamentos.Api.csproj",
+      "projectUniqueName": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Api\\VoxFundamentos.Api.csproj",
       "projectName": "VoxFundamentos.Api",
-      "projectPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Api\\VoxFundamentos.Api.csproj",
+      "projectPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Api\\VoxFundamentos.Api.csproj",
       "packagesPath": "C:\\Users\\gean.lima\\.nuget\\packages\\",
-      "outputPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Api\\obj\\",
+      "outputPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Api\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\gean.lima\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -1480,11 +1480,11 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj": {
-              "projectPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj"
+            "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj": {
+              "projectPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Application\\VoxFundamentos.Application.csproj"
             },
-            "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Infrastructure\\VoxFundamentos.Infrastructure.csproj": {
-              "projectPath": "C:\\GSL\\VoxFundamentos\\VoxFundamentos.Infrastructure\\VoxFundamentos.Infrastructure.csproj"
+            "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Infrastructure\\VoxFundamentos.Infrastructure.csproj": {
+              "projectPath": "C:\\GSL\\vix-fundamentos-api\\VoxFundamentos.Infrastructure\\VoxFundamentos.Infrastructure.csproj"
             }
           }
         }
