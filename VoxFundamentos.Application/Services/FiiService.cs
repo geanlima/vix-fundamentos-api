@@ -17,7 +17,6 @@ public class FiiService : IFiiService
         _indicadores = indicadores;
     }
 
-    // 🔹 Lista completa (sem ranking)
     public async Task<IEnumerable<FiiDto>> ObterFiisAsync(CancellationToken ct)
     {
         var fiis = (await _repo.ObterTodosAsync(ct))
@@ -59,8 +58,43 @@ public class FiiService : IFiiService
         return await Task.WhenAll(tasks);
     }
 
+    public async Task<IEnumerable<FiiAncoragemDto>> ObterFiisAncoragemAsync(CancellationToken ct)
+    {
+        var fiis = await _repo.ObterTodosAsync(ct);
 
-    // 🔹 Buscar FII por papel
+        return fiis
+            .Where(f =>
+                f.Liquidez >= 1_500_000m &&
+                f.ValorMercado >= 1_000_000_000m &&
+                f.Pvp >= 0.98m &&
+                f.VacanciaMedia <= 10m &&
+                !IsShopping(f.Segmento)
+            )
+            .OrderBy(f => f.Papel, StringComparer.OrdinalIgnoreCase)
+            .Select(f => new FiiAncoragemDto(
+                Papel: f.Papel,
+                Segmento: f.Segmento,
+                Cotacao: f.Cotacao,
+                FfoYield: f.FfoYield,
+                DividendYield: f.DividendYield,
+                Pvp: f.Pvp,
+                ValorMercado: f.ValorMercado,
+                Liquidez: f.Liquidez,
+                QuantidadeImoveis: f.QuantidadeImoveis,
+                PrecoMetroQuadrado: f.PrecoMetroQuadrado,
+                AluguelMetroQuadrado: f.AluguelMetroQuadrado,
+                CapRate: f.CapRate,
+                VacanciaMedia: f.VacanciaMedia
+            ))
+            .ToList();
+    }
+
+    private static bool IsShopping(string? segmento)
+    {
+        if (string.IsNullOrWhiteSpace(segmento)) return false;
+        return segmento.Trim().ToLowerInvariant().Contains("shopping");
+    }
+
     public async Task<FiiDto?> ObterPorPapelAsync(string papel, CancellationToken ct)
     {
         var fii = await _repo.ObterPorPapelAsync(papel, ct);
@@ -101,7 +135,6 @@ public class FiiService : IFiiService
         );
     }
 
-    // 🔹 Lista filtrada + ranking completo
     public async Task<IEnumerable<FiiDto>> ObterFiisFiltradosAsync(CancellationToken ct)
     {
         var selic = await _indicadores.ObterSelicAtualAsync(ct);
@@ -114,10 +147,8 @@ public class FiiService : IFiiService
 
         var liquidezMin = 400000m;
 
-        // 1) pega TUDO (rápido: 1 scrape)
         var fiis = await _repo.ObterTodosAsync(ct);
 
-        // 2) filtra (aqui ainda sem DivCota)
         var baseList = fiis
             .Where(f =>
                 f.DividendYield >= dyMinimo &&
@@ -132,7 +163,6 @@ public class FiiService : IFiiService
         if (baseList.Count == 0)
             return Array.Empty<FiiDto>();
 
-        // 3) rank P/VP e DY usando só a lista filtrada
         var rankPvpMap = baseList
             .OrderBy(f => f.Pvp)
             .Select((f, index) => new { f.Papel, Rank = index + 1 })
@@ -143,7 +173,6 @@ public class FiiService : IFiiService
             .Select((f, index) => new { f.Papel, Rank = index + 1 })
             .ToDictionary(x => x.Papel, x => x.Rank, StringComparer.OrdinalIgnoreCase);
 
-        // 4) calcula RankLevel e pega TOP 10 (sem chamar detalhes ainda!)
         var top10Base = baseList
             .Select(f =>
             {
@@ -159,7 +188,6 @@ public class FiiService : IFiiService
             .Take(10)
             .ToList();
 
-        // 5) agora SIM: só no TOP 10 busca DivCota (detalhes) e calcula derivados
         const int maxConcorrencia = 4;
         using var sem = new SemaphoreSlim(maxConcorrencia);
 
@@ -170,7 +198,6 @@ public class FiiService : IFiiService
             {
                 var f = x.Fii;
 
-                // 🔥 pega do detalhes (cacheado no repo)
                 var divCota = await _repo.ObterDividendoPorCotaAsync(f.Papel, ct) ?? 0m;
 
                 var proventoMensal = CalcularProventoMensalPeloDivCota(divCota);
@@ -213,7 +240,6 @@ public class FiiService : IFiiService
             }
         });
 
-        // Já volta ordenado (opcional), mas mantém consistência:
         var top10 = await Task.WhenAll(tasks);
 
         return top10
@@ -222,11 +248,6 @@ public class FiiService : IFiiService
             .ThenBy(x => x.RankDy)
             .ToList();
     }
-
-
-    // =========================
-    // ✅ CÁLCULOS (privados)
-    // =========================
 
     private static decimal CalcularProventoMensalPeloDivCota(decimal dividendoPorCota12m)
     {
