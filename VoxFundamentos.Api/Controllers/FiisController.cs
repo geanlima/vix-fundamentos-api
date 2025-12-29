@@ -38,4 +38,11 @@ public class FiisController : ControllerBase
         var data = await _service.ObterFiisFiltradosAsync(ct);
         return Ok(data);
     }
+
+    [HttpGet("ancoragem")]
+    public async Task<IActionResult> GetAncoragem(CancellationToken ct)
+    {
+        var data = await _service.ObterFiisAncoragemAsync(ct);
+        return Ok(data);
+    }
 }
