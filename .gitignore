@@ -186,3 +186,4 @@ Migrations/*.csproj
 /VoxFundamentos.Domain/obj/VoxFundamentos.Domain.csproj.nuget.g.props
 /VoxFundamentos.Domain/obj/project.assets.json
 /VoxFundamentos.Domain/obj/Debug/net8.0/VoxFundamentos.Domain.csproj.FileListAbsolute.txt
+/VoxFundamentos.Infrastructure/obj/Debug/net8.0/VoxFundamentos.Infrastructure.AssemblyInfo.cs
