@@ -1,5 +1,6 @@
 ﻿using VoxFundamentos.Application.DTOs;
 using VoxFundamentos.Application.Interfaces;
+using VoxFundamentos.Application.Mappers;
 using VoxFundamentos.Domain.Entities;
 using VoxFundamentos.Domain.Interfaces;
 
@@ -257,7 +258,9 @@ public class FiiService : IFiiService
         return await ObterCarteiraParametrizadaAsync(param, ct);
     }
 
-    public async Task<CarteiraSugeridaDto> ObterCarteiraPorPerfisAsync(CarteiraPerfisRequestDto req, CancellationToken ct)
+    public async Task<CarteiraPerfisFiiResponseDto> ObterCarteiraPorPerfisAsync(
+        CarteiraPerfisRequestDto req,
+        CancellationToken ct)
     {
         if (req.TotalFiis <= 0)
             throw new ArgumentException("TotalFiis deve ser > 0.");
@@ -278,14 +281,14 @@ public class FiiService : IFiiService
             req.RiscoControladoPercentual,
             req.RiscoElevadoPercentual);
 
-        // base grande, senão falta papel ao separar por perfil
+        // base grande para não faltar após separar por perfil
         var topBase = Math.Max(150, req.TotalFiis * 12);
-        var todos = await ObterRankingMistoAsync(topBase, ct);
+        var todosRank = await ObterRankingMistoAsync(topBase, ct);
 
-        var ancoragem = todos.Where(f => FiiScoreRules.ClassificarPerfil(f) == "Ancoragem").ToList();
-        var potencial = todos.Where(f => FiiScoreRules.ClassificarPerfil(f) == "Potencial").ToList();
-        var riscoControlado = todos.Where(f => FiiScoreRules.ClassificarPerfil(f) == "Risco Controlado").ToList();
-        var riscoElevado = todos.Where(f => FiiScoreRules.ClassificarPerfil(f) == "Risco Elevado").ToList();
+        var ancoragem = todosRank.Where(f => FiiScoreRules.ClassificarPerfil(f) == "Ancoragem").ToList();
+        var potencial = todosRank.Where(f => FiiScoreRules.ClassificarPerfil(f) == "Potencial").ToList();
+        var riscoControlado = todosRank.Where(f => FiiScoreRules.ClassificarPerfil(f) == "Risco Controlado").ToList();
+        var riscoElevado = todosRank.Where(f => FiiScoreRules.ClassificarPerfil(f) == "Risco Elevado").ToList();
 
         var usados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -294,28 +297,128 @@ public class FiiService : IFiiService
         var selRC = Pick(riscoControlado, qRC, usados);
         var selRE = Pick(riscoElevado, qRE, usados);
 
-        const decimal maxPorAtivo = 15m;
+        // ✅ mapa Papel -> Perfil forçado
+        var perfilPorPapel = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var x in selAnc) perfilPorPapel[x.Papel] = "Ancoragem";
+        foreach (var x in selPot) perfilPorPapel[x.Papel] = "Potencial";
+        foreach (var x in selRC) perfilPorPapel[x.Papel] = "Risco Controlado";
+        foreach (var x in selRE) perfilPorPapel[x.Papel] = "Risco Elevado";
 
-        var itens = new List<CarteiraSugeridaItemDto>();
-        itens.AddRange(DistribuirPeso(selAnc, "Ancoragem", req.AncoragemPercentual, maxPorAtivo));
-        itens.AddRange(DistribuirPeso(selPot, "Potencial", req.PotencialPercentual, maxPorAtivo));
-        itens.AddRange(DistribuirPeso(selRC, "Risco Controlado", req.RiscoControladoPercentual, maxPorAtivo));
-        itens.AddRange(DistribuirPeso(selRE, "Risco Elevado", req.RiscoElevadoPercentual, maxPorAtivo));
+        // ✅ ordem final: anc -> pot -> rc -> re
+        var papeisOrdenados = selAnc
+            .Concat(selPot)
+            .Concat(selRC)
+            .Concat(selRE)
+            .Select(x => x.Papel)
+            .ToList();
 
-        NormalizarParaCem(itens);
+        // pega FIIs completos (entidade)
+        var todosFiis = await _repo.ObterTodosAsync(ct);
 
-        return new CarteiraSugeridaDto(
-            PesoTijoloPercentual: 0,
-            PesoPapelPercentual: 0,
-            PesoRiscoPercentual: 0,
-            TotalAtivos: itens.Count,
+        var mapFii = todosFiis
+            .Where(f => perfilPorPapel.ContainsKey(f.Papel))
+            .ToDictionary(f => f.Papel, f => f, StringComparer.OrdinalIgnoreCase);
+
+        var fiisSelecionadosOrdenados = papeisOrdenados
+            .Where(mapFii.ContainsKey)
+            .Select(p => mapFii[p])
+            .ToList();
+
+        // ✅ monta DTOs já com Tipo + Motivos coerentes com o perfil forçado
+        using var sem = new SemaphoreSlim(DefaultMaxConcorrencia);
+
+        var tasks = fiisSelecionadosOrdenados.Select(async fii =>
+        {
+            await sem.WaitAsync(ct);
+            try
+            {
+                var divCota12m = await _repo.ObterDividendoPorCotaAsync(fii.Papel, ct) ?? 0m;
+
+                perfilPorPapel.TryGetValue(fii.Papel, out var perfilForcado);
+
+                // ✅ calcula tipo/motivos usando o perfil forçado
+                var (tipoFinal, motivos) = CalcularTipoEMotivos(fii, perfilForcado);
+
+                // ✅ garante não vazio
+                motivos ??= Array.Empty<string>();
+                if (motivos.Length == 0)
+                    motivos = new[] { $"Classificado como '{tipoFinal}' pelas regras." };
+
+                return fii.ToDto(
+                    dividendoPorCota12m: divCota12m,
+                    tipo: tipoFinal,
+                    motivos: motivos
+                );
+            }
+            finally
+            {
+                sem.Release();
+            }
+        });
+
+        var itens = (await Task.WhenAll(tasks)).ToList();
+
+        return new CarteiraPerfisFiiResponseDto(
+            Ancoragem: req.AncoragemPercentual,
+            Potencial: req.PotencialPercentual,
+            RiscoControlado: req.RiscoControladoPercentual,
+            RiscoElevado: req.RiscoElevadoPercentual,
+            TotalFii: req.TotalFiis,
             Itens: itens
         );
     }
 
-    // =========================================================
-    // 6) FILTRADOS (ranking PVP + DY) - TOP parametrizável
-    // =========================================================
+
+    private static (string tipoPerfil, string[] motivos) CalcularTipoEMotivos(Fii f, string? perfilForcado = null)
+    {
+        var a = ToAncoragemDto(f);
+        var tipoFundo = FiiScoreRules.DetectarTipo(f.Segmento);
+
+        var (score, risco, motivosBase) = tipoFundo == "TIJOLO"
+            ? FiiScoreRules.ScoreTijolo(a)
+            : FiiScoreRules.ScorePapel(a);
+
+        // ✅ se FiiRankingDto.Motivos for List<string>
+        var rankingTmp = new FiiRankingDto(
+            Papel: f.Papel,
+            Segmento: f.Segmento,
+            Cotacao: f.Cotacao,
+            DividendYield: f.DividendYield,
+            Pvp: f.Pvp,
+            ValorMercado: f.ValorMercado,
+            Liquidez: f.Liquidez,
+            VacanciaMedia: f.VacanciaMedia,
+            QuantidadeImoveis: f.QuantidadeImoveis,
+            Score: score,
+            Tipo: tipoFundo,
+            Risco: risco,
+            Motivos: motivosBase ?? Array.Empty<string>()
+        );
+
+        var perfilCalculado = FiiScoreRules.ClassificarPerfil(rankingTmp);
+        var perfilFinal = string.IsNullOrWhiteSpace(perfilForcado) ? perfilCalculado : perfilForcado;
+
+        var motivosPerfil = MotivosPerfil(a, perfilFinal, tipoFundo, risco, score);
+
+        var final = new List<string>();
+
+        if (motivosBase is { Length: > 0 })
+            final.AddRange(motivosBase);
+
+        if (motivosPerfil is { Length: > 0 })
+            final.AddRange(motivosPerfil);
+
+        var arr = final
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (arr.Length == 0)
+            arr = new[] { $"Classificado como '{perfilFinal}' pelas regras." };
+
+        return (perfilFinal, arr);
+    }
+
 
     public async Task<IEnumerable<FiiDto>> ObterFiisFiltradosAsync(CancellationToken ct)
         => await ObterFiisFiltradosAsync(top: DefaultTop, ct);
@@ -481,9 +584,9 @@ public class FiiService : IFiiService
 
 
     private async Task<List<FiiDto>> MapearFiiDtoComCamposCalculadosAsync(
-        List<Fii> fiis,
-        int maxConcorrencia,
-        CancellationToken ct)
+    List<Fii> fiis,
+    int maxConcorrencia,
+    CancellationToken ct)
     {
         using var sem = new SemaphoreSlim(maxConcorrencia);
 
@@ -492,38 +595,14 @@ public class FiiService : IFiiService
             await sem.WaitAsync(ct);
             try
             {
-                var divCota12m = await _repo.ObterDividendoPorCotaAsync((string)f.Papel, ct) ?? 0m;
+                var divCota12m = await _repo.ObterDividendoPorCotaAsync(f.Papel, ct) ?? 0m;
 
-                var proventoMensal = CalcularProventoMensalPeloDivCota(divCota12m);
-                var proventoDiario = CalcularProventoDiario(proventoMensal);
-                var dyMensal = CalcularDyMensalPeloProvento((decimal)f.Cotacao, proventoMensal);
+                var (tipo, motivos) = CalcularTipoEMotivos(f);
 
-                var qtdCotasNumeroMagico = CalcularQtdCotasNumeroMagico((decimal)f.Cotacao, proventoMensal);
-                var valorParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, (decimal)f.Cotacao);
-
-                return new FiiDto(
-                    RankPvp: 0,
-                    RankDy: 0,
-                    RankLevel: 0,
-                    Papel: f.Papel,
-                    Segmento: f.Segmento,
-                    Cotacao: f.Cotacao,
-                    FfoYield: f.FfoYield,
-                    DividendYield: f.DividendYield,
-                    Pvp: f.Pvp,
-                    ValorMercado: f.ValorMercado,
-                    Liquidez: f.Liquidez,
-                    QuantidadeImoveis: f.QuantidadeImoveis,
-                    PrecoMetroQuadrado: f.PrecoMetroQuadrado,
-                    AluguelMetroQuadrado: f.AluguelMetroQuadrado,
-                    CapRate: f.CapRate,
-                    VacanciaMedia: f.VacanciaMedia,
-                    DividendoPorCota: divCota12m,
-                    DyMensalPercentual: dyMensal,
-                    ProventoMensalPorCota: proventoMensal,
-                    ProventoDiarioPorCota: proventoDiario,
-                    QtdCotasNumeroMagico: qtdCotasNumeroMagico,
-                    ValorParaNumeroMagico: valorParaNumeroMagico
+                return f.ToDto(
+                    dividendoPorCota12m: divCota12m,
+                    tipo: tipo,
+                    motivos: motivos
                 );
             }
             finally
@@ -535,47 +614,61 @@ public class FiiService : IFiiService
         return (await Task.WhenAll(tasks)).ToList();
     }
 
+
+
+
     private async Task<FiiDto> MapearFiiDtoComCamposCalculadosAsync(Fii f, CancellationToken ct)
     {
         var divCota12m = await _repo.ObterDividendoPorCotaAsync(f.Papel, ct) ?? 0m;
 
-        var proventoMensal = CalcularProventoMensalPeloDivCota(divCota12m);
-        var proventoDiario = CalcularProventoDiario(proventoMensal);
-        var dyMensal = CalcularDyMensalPeloProvento(f.Cotacao, proventoMensal);
+        var (tipo, motivos) = CalcularTipoEMotivos(f);
 
-        var qtdCotasNumeroMagico = CalcularQtdCotasNumeroMagico(f.Cotacao, proventoMensal);
-        var valorParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, f.Cotacao);
-
-        return new FiiDto(
-            RankPvp: 0,
-            RankDy: 0,
-            RankLevel: 0,
-            Papel: f.Papel,
-            Segmento: f.Segmento,
-            Cotacao: f.Cotacao,
-            FfoYield: f.FfoYield,
-            DividendYield: f.DividendYield,
-            Pvp: f.Pvp,
-            ValorMercado: f.ValorMercado,
-            Liquidez: f.Liquidez,
-            QuantidadeImoveis: f.QuantidadeImoveis,
-            PrecoMetroQuadrado: f.PrecoMetroQuadrado,
-            AluguelMetroQuadrado: f.AluguelMetroQuadrado,
-            CapRate: f.CapRate,
-            VacanciaMedia: f.VacanciaMedia,
-            DividendoPorCota: divCota12m,
-            DyMensalPercentual: dyMensal,
-            ProventoMensalPorCota: proventoMensal,
-            ProventoDiarioPorCota: proventoDiario,
-            QtdCotasNumeroMagico: qtdCotasNumeroMagico,
-            ValorParaNumeroMagico: valorParaNumeroMagico
+        return f.ToDto(
+            dividendoPorCota12m: divCota12m,
+            tipo: tipo,
+            motivos: motivos
         );
     }
 
+    private static string[] MotivosPerfil(FiiAncoragemDto f, string perfil, string tipoFundo, string risco, decimal score)
+    {
+        var m = new List<string>();
 
-    // =========================================================
-    // HELPERS: picks, quantidades, distribuição, etc
-    // =========================================================
+        // 🔹 exemplos de motivos (ajuste conforme SUAS regras reais)
+
+        if (perfil == "Ancoragem")
+        {
+            if (f.ValorMercado >= 1_000_000_000m) m.Add("Valor de mercado ≥ 1 bi (ancoragem)");
+            if (f.Liquidez >= 1_500_000m) m.Add("Liquidez alta (≥ 1,5M)");
+            if (f.Pvp >= 0.98m && f.Pvp <= 1.05m) m.Add("P/VP perto de 1 (faixa de ancoragem)");
+            if (f.VacanciaMedia <= 10m) m.Add("Vacância ≤ 10%");
+        }
+        else if (perfil == "Potencial")
+        {
+            if (f.Pvp < 0.95m) m.Add("P/VP abaixo de 1 (desconto / potencial)");
+            if (f.DividendYield >= 10m) m.Add("DY elevado");
+            if (f.FfoYield >= 9m) m.Add("FFO Yield elevado");
+        }
+        else if (perfil == "Risco Controlado")
+        {
+            m.Add("Score intermediário (perfil de risco controlado)");
+            if (f.Liquidez >= 800_000m) m.Add("Liquidez razoável (≥ 800k)");
+        }
+        else if (perfil == "Risco Elevado")
+        {
+            m.Add("Perfil classificado como risco elevado pelas regras");
+            if (f.Liquidez < 800_000m) m.Add("Liquidez baixa");
+            if (f.VacanciaMedia > 15m) m.Add("Vacância acima de 15%");
+            if (f.ValorMercado < 300_000_000m) m.Add("Valor de mercado baixo");
+        }
+
+        // fallback (não deixa vazio nunca)
+        if (m.Count == 0)
+            m.Add($"Classificado como '{perfil}' pelas regras (tipo={tipoFundo}, risco={risco}, score={score}).");
+
+        return m.ToArray();
+    }
+
 
     private static List<FiiRankingDto> Pick(List<FiiRankingDto> fonte, int qtd, HashSet<string> usados)
     {
