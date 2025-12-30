@@ -20,6 +20,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddMemoryCache();
 // Clean Architecture
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();

@@ -1,18 +1,194 @@
-# ===== .NET =====
-bin/
-obj/
-*.dll
-*.pdb
-*.cache
-*.exe
+############################################
+# .NET / C#
+############################################
 
-# ===== VS Code =====
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio Code
 .vscode/
 !.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
-# ===== OS =====
-.DS_Store
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Mono / Xamarin
+*.pidb
+*.userprefs
+*.userproj
+*.mcsproj.user
+
+############################################
+# .NET Core / ASP.NET
+############################################
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Web publish
+wwwroot/lib/
+wwwroot/dist/
+wwwroot/*.map
+
+# Environment files
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+
+############################################
+# NuGet
+############################################
+
+# NuGet packages
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# NuGet lock & temp
+project.lock.json
+project.assets.json
+
+############################################
+# Test / Coverage
+############################################
+
+# Test results
+TestResults/
+*.trx
+
+# Coverage
+coverage/
+coverage.xml
+coverage.json
+coverage.opencover.xml
+*.coverage
+*.coveragexml
+
+############################################
+# Logs / Dumps
+############################################
+
+*.log
+*.dmp
+
+############################################
+# OS
+############################################
+
+# Windows
 Thumbs.db
+<<<<<<< HEAD
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+############################################
+# Docker
+############################################
+
+docker-compose.override.yml
+.env
+.env.*
+
+############################################
+# Azure / Cloud
+############################################
+
+.azure/
+.azure-pipelines/
+*.publishsettings
+*.azurePubxml
+*.pubxml
+
+############################################
+# Sonar / Static Analysis
+############################################
+
+.sonarqube/
+.scannerwork/
+
+############################################
+# PowerShell
+############################################
+
+*.psm1
+*.psd1
+
+############################################
+# Certificates / Secrets
+############################################
+
+*.pfx
+*.pem
+*.key
+secrets.json
+
+############################################
+# Misc
+############################################
+
+*.cache
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+
+############################################
+# SourceLink / Debug
+############################################
+
+*.pdb
+*.mdb
+*.dbg
+
+############################################
+# Entity Framework
+############################################
+
+Migrations/*.Designer.cs
+Migrations/*.csproj
+
+############################################
+# End
+############################################
+/VoxFundamentos.sln
+/VoxFundamentos.Infrastructure/obj/VoxFundamentos.Infrastructure.csproj.nuget.g.props
+/VoxFundamentos.Infrastructure/obj/project.assets.json
+/VoxFundamentos.Infrastructure/obj/Debug/net8.0/VoxFundamentos.Infrastructure.csproj.FileListAbsolute.txt
+/VoxFundamentos.Domain/obj/VoxFundamentos.Domain.csproj.nuget.g.props
+/VoxFundamentos.Domain/obj/project.assets.json
+/VoxFundamentos.Domain/obj/Debug/net8.0/VoxFundamentos.Domain.csproj.FileListAbsolute.txt
+/VoxFundamentos.Infrastructure/obj/Debug/net8.0/VoxFundamentos.Infrastructure.AssemblyInfo.cs
+=======
 *.db
 *.db-shm
 *.db-wal
@@ -33,3 +209,12 @@ Thumbs.db
 *.suo
 *.user
 /VoxFundamentos.Domain/obj/Debug/net8.0/VoxFundamentos.Domain.GlobalUsings.g.cs
+>>>>>>> e9f0b8515deb3b789125d860268317bb4e1b738b
+/VoxFundamentos.Domain/obj/VoxFundamentos.Domain.csproj.nuget.dgspec.json
+/VoxFundamentos.Infrastructure/obj/VoxFundamentos.Infrastructure.csproj.nuget.dgspec.json
+/VoxFundamentos.Domain/obj/project.assets.json
+/VoxFundamentos.Infrastructure/obj/project.assets.json
+/VoxFundamentos.Api/obj/project.assets.json
+/VoxFundamentos.Api/obj/VoxFundamentos.Api.csproj.nuget.dgspec.json
+/VoxFundamentos.Application/obj/VoxFundamentos.Application.csproj.nuget.dgspec.json
+/VoxFundamentos.Application/obj/project.assets.json

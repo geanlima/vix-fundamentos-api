@@ -21,6 +21,9 @@ public class Fii
     public decimal CapRate { get; }
     public decimal VacanciaMedia { get; }
 
+    // ✅ NOVO: Dividendo/cota (últimos 12 meses) vindo do detalhes.php
+    public decimal DividendoPorCota { get; }
+
     public Fii(
         string papel,
         string segmento,
@@ -34,7 +37,9 @@ public class Fii
         decimal precoMetroQuadrado,
         decimal aluguelMetroQuadrado,
         decimal capRate,
-        decimal vacanciaMedia)
+        decimal vacanciaMedia,
+        decimal dividendoPorCota // ✅ novo parâmetro
+    )
     {
         Papel = papel;
         Segmento = segmento;
@@ -49,5 +54,7 @@ public class Fii
         AluguelMetroQuadrado = aluguelMetroQuadrado;
         CapRate = capRate;
         VacanciaMedia = vacanciaMedia;
+
+        DividendoPorCota = dividendoPorCota;
     }
 }
