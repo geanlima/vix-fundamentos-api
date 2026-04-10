@@ -1,4 +1,4 @@
-public record FiiDto(
+public sealed record FiiDto(
     int RankPvp,
     int RankDy,
     decimal RankLevel,
@@ -15,14 +15,14 @@ public record FiiDto(
     decimal AluguelMetroQuadrado,
     decimal CapRate,
     decimal VacanciaMedia,
-
-    // 🔹 Dividendos
     decimal DividendoPorCota,
-    decimal DyMensalPercentual,
+    decimal DyMensal,
     decimal ProventoMensalPorCota,
     decimal ProventoDiarioPorCota,
-
-    // 🔥 NOVAS COLUNAS (Número Mágico)
     int QtdCotasNumeroMagico,
-    decimal ValorParaNumeroMagico
+    decimal ValorParaNumeroMagico,
+    string Tipo,
+    string[] Motivos
 );
+
+

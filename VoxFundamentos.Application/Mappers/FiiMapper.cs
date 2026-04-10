@@ -5,9 +5,16 @@ namespace VoxFundamentos.Application.Mappers;
 
 public static class FiiMapper
 {
-    public static FiiDto ToDto(this Fii f)
+    public static FiiDto ToDto(
+    this Fii f,
+    decimal dividendoPorCota12m,
+    string? tipo = null,
+    string[]? motivos = null,
+    int rankPvp = 0,
+    int rankDy = 0,
+    decimal rankLevel = 0m)
     {
-        var proventoMensal = CalcularProventoMensalPeloDivCota(f.DividendoPorCota);
+        var proventoMensal = CalcularProventoMensalPeloDivCota(dividendoPorCota12m);
         var proventoDiario = CalcularProventoDiario(proventoMensal);
         var dyMensal = CalcularDyMensalPeloProvento(f.Cotacao, proventoMensal);
 
@@ -15,9 +22,9 @@ public static class FiiMapper
         var valorParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, f.Cotacao);
 
         return new FiiDto(
-            RankPvp: 0,
-            RankDy: 0,
-            RankLevel: 0,
+            RankPvp: rankPvp,
+            RankDy: rankDy,
+            RankLevel: rankLevel,
             Papel: f.Papel,
             Segmento: f.Segmento,
             Cotacao: f.Cotacao,
@@ -31,16 +38,19 @@ public static class FiiMapper
             AluguelMetroQuadrado: f.AluguelMetroQuadrado,
             CapRate: f.CapRate,
             VacanciaMedia: f.VacanciaMedia,
-
-            DividendoPorCota: f.DividendoPorCota,
-            DyMensalPercentual: dyMensal,
+            DividendoPorCota: dividendoPorCota12m,
+            DyMensal: dyMensal,
             ProventoMensalPorCota: proventoMensal,
             ProventoDiarioPorCota: proventoDiario,
-
             QtdCotasNumeroMagico: qtdCotasNumeroMagico,
-            ValorParaNumeroMagico: valorParaNumeroMagico
+            ValorParaNumeroMagico: valorParaNumeroMagico,
+            Tipo: tipo ?? string.Empty,
+            Motivos: motivos ?? Array.Empty<string>()
         );
     }
+
+
+
 
     private static decimal CalcularProventoMensalPeloDivCota(decimal dividendoPorCota12m)
     {
