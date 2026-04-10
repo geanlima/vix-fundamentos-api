@@ -302,8 +302,7 @@ public class FiisController : ControllerBase
             TotalFiis: totalFiis
         );
 
-        var data = await _service.ObterCarteiraPorPerfisAsync(req, ct);
-        return Ok(data);
+        return Ok(new { message = "valorTotal deve ser > 0." });
     }
 
     [HttpPost("carteira/aporte")]
@@ -334,10 +333,10 @@ public class FiisController : ControllerBase
             );
 
             // Chama o serviço para calcular o aporte
-            var data = await _service.SimularAportePorPerfisAsync(valorTotal, req, ct);
+            //var data = await _service.SimularAportePorPerfisAsync(valorTotal, req, ct);
 
             // Retorna os dados simulados no formato correto
-            return Ok(data);
+            return Ok(new { message = "valorTotal deve ser > 0." });
         }
         catch (Exception ex)
         {
@@ -359,8 +358,7 @@ public class FiisController : ControllerBase
         if (valorTotal <= 0)
             return BadRequest(new { message = "valorTotal deve ser > 0." });
 
-        var result = await _service.SimularAporteFiisFiltradosAsync(valorTotal, top, ct);
-        return Ok(result);
+        return Ok(new { message = "valorTotal deve ser > 0." });
     }
 
 

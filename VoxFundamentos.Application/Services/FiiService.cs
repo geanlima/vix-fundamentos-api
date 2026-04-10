@@ -368,12 +368,6 @@ public class FiiService : IFiiService
         );
     }
 
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-    // =========================================================
-    // 6) FILTRADOS (ranking PVP + DY) - TOP parametrizável
-    // =========================================================
-=======
     public async Task<CarteiraAporteResponseDto> SimularAportePorPerfisAsync(
         decimal valorTotal,
         CarteiraPerfisRequestDto req,
@@ -484,10 +478,6 @@ public class FiiService : IFiiService
         );
     }
 
-
-=======
->>>>>>> a5260eb0a515518a01a4c505cb36fb06f75b3fea
-
     private static (string tipoPerfil, string[] motivos) CalcularTipoEMotivos(Fii f, string? perfilForcado = null)
     {
         var a = ToAncoragemDto(f);
@@ -538,10 +528,6 @@ public class FiiService : IFiiService
         return (perfilFinal, arr);
     }
 
-<<<<<<< HEAD
->>>>>>> Stashed changes
-=======
->>>>>>> a5260eb0a515518a01a4c505cb36fb06f75b3fea
 
     public async Task<IEnumerable<FiiDto>> ObterFiisFiltradosAsync(CancellationToken ct)
         => await ObterFiisFiltradosAsync(top: DefaultTop, ct);
