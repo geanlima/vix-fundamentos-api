@@ -11,13 +11,21 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoxFundamentos.Domain", "Vo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoxFundamentos.Infrastructure", "VoxFundamentos.Infrastructure\VoxFundamentos.Infrastructure.csproj", "{83644DB6-7A77-4B8C-8376-7D16F0645A3B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		index.js = index.js
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		package.json = package.json
+		wrangler.jsonc = wrangler.jsonc
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{4740BE32-882C-4611-9F29-61F4AD23A7A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -36,5 +44,11 @@ Global
 		{83644DB6-7A77-4B8C-8376-7D16F0645A3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83644DB6-7A77-4B8C-8376-7D16F0645A3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83644DB6-7A77-4B8C-8376-7D16F0645A3B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D25C5AB2-987B-4167-940D-EBF0D5FBC11F}
 	EndGlobalSection
 EndGlobal
