@@ -1,1 +1,6 @@
-
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "vix-fundamentos-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-04-10"
+}
