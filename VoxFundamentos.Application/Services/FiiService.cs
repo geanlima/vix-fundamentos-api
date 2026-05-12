@@ -368,6 +368,115 @@ public class FiiService : IFiiService
         );
     }
 
+    public async Task<CarteiraAporteResponseDto> SimularAportePorPerfisAsync(
+        decimal valorTotal,
+        CarteiraPerfisRequestDto req,
+        CancellationToken ct
+    )
+    {
+        if (valorTotal <= 0) throw new ArgumentException("Valor deve ser > 0.");
+
+        // Reaproveita seu método existente (gera os 15 FIIs com tipo e proventoMensalPorCota etc.)
+        var carteira = await ObterCarteiraPorPerfisAsync(req, ct);
+
+        // Agrupa por perfil (Tipo)
+        var grupos = carteira.Itens
+            .GroupBy(x => x.Tipo, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+        PerfilAporteDto MontarPerfil(string perfil, decimal percentual)
+        {
+            grupos.TryGetValue(perfil, out var fiis);
+            fiis ??= new List<FiiDto>();
+
+            var valorAlocado = Math.Round(valorTotal * (percentual / 100m), 2);
+
+            if (fiis.Count == 0)
+            {
+                return new PerfilAporteDto(
+                    Perfil: perfil,
+                    Percentual: percentual,
+                    ValorAlocado: valorAlocado,
+                    ValorInvestido: 0m,
+                    SobraCaixa: valorAlocado,
+                    RendaMensal: 0m,
+                    RendaDiaria: 0m,
+                    Itens: new List<ItemAporteDto>());
+            }
+
+            var verbaPorFii = valorAlocado / fiis.Count;
+
+            var itens = new List<ItemAporteDto>();
+            foreach (var f in fiis)
+            {
+                var cotacao = f.Cotacao;
+                var proventoMensal = f.ProventoMensalPorCota;
+
+                var cotas = (cotacao > 0m)
+                    ? (int)Math.Floor(verbaPorFii / cotacao)
+                    : 0;
+
+                var investido = Math.Round(cotas * cotacao, 2);
+                var rendaMensal = Math.Round(cotas * proventoMensal, 4);
+                var rendaDiaria = Math.Round(rendaMensal / 30.4375m, 6); // média mês
+
+                itens.Add(new ItemAporteDto(
+                    Papel: f.Papel,
+                    Segmento: f.Segmento,
+                    Cotacao: cotacao,
+                    ProventoMensalPorCota: proventoMensal,
+                    Cotas: cotas,
+                    ValorInvestido: investido,
+                    RendaMensal: rendaMensal,
+                    RendaDiaria: rendaDiaria
+                ));
+            }
+
+            var valorInvestidoPerfil = Math.Round(itens.Sum(x => x.ValorInvestido), 2);
+            var sobra = Math.Round(valorAlocado - valorInvestidoPerfil, 2);
+            var rendaMensalPerfil = Math.Round(itens.Sum(x => x.RendaMensal), 4);
+            var rendaDiariaPerfil = Math.Round(itens.Sum(x => x.RendaDiaria), 6);
+
+            return new PerfilAporteDto(
+                Perfil: perfil,
+                Percentual: percentual,
+                ValorAlocado: Math.Round(valorAlocado, 2),
+                ValorInvestido: valorInvestidoPerfil,
+                SobraCaixa: sobra,
+                RendaMensal: rendaMensalPerfil,
+                RendaDiaria: rendaDiariaPerfil,
+                Itens: itens
+            );
+        }
+
+        var anc = MontarPerfil("Ancoragem", req.AncoragemPercentual);
+        var pot = MontarPerfil("Potencial", req.PotencialPercentual);
+        var rc = MontarPerfil("Risco Controlado", req.RiscoControladoPercentual);
+        var re = MontarPerfil("Risco Elevado", req.RiscoElevadoPercentual);
+
+        var totalInvestido = Math.Round(anc.ValorInvestido + pot.ValorInvestido + rc.ValorInvestido + re.ValorInvestido, 2);
+        var sobraGeral = Math.Round(anc.SobraCaixa + pot.SobraCaixa + rc.SobraCaixa + re.SobraCaixa, 2);
+        var rendaMensalGeral = Math.Round(anc.RendaMensal + pot.RendaMensal + rc.RendaMensal + re.RendaMensal, 4);
+        var rendaDiariaGeral = Math.Round(anc.RendaDiaria + pot.RendaDiaria + rc.RendaDiaria + re.RendaDiaria, 6);
+
+        return new CarteiraAporteResponseDto(
+            ValorTotal: Math.Round(valorTotal, 2),
+            AncoragemPercentual: req.AncoragemPercentual,
+            PotencialPercentual: req.PotencialPercentual,
+            RiscoControladoPercentual: req.RiscoControladoPercentual,
+            RiscoElevadoPercentual: req.RiscoElevadoPercentual,
+            Ancoragem: anc,
+            Potencial: pot,
+            RiscoControlado: rc,
+            RiscoElevado: re,
+            TotaisGerais: new TotaisAporteDto(
+                ValorInvestido: totalInvestido,
+                SobraCaixa: sobraGeral,
+                RendaMensal: rendaMensalGeral,
+                RendaDiaria: rendaDiariaGeral
+            )
+        );
+    }
 
     private static (string tipoPerfil, string[] motivos) CalcularTipoEMotivos(Fii f, string? perfilForcado = null)
     {
@@ -502,6 +611,84 @@ public class FiiService : IFiiService
             .ThenBy(x => x.RankDy)
             .ToList();
     }
+
+    public async Task<AporteFiltradosResponseDto> SimularAporteFiisFiltradosAsync(
+    decimal valorTotal,
+    int top,
+    CancellationToken ct)
+    {
+        if (valorTotal <= 0) throw new ArgumentException("Valor deve ser > 0.");
+        if (top <= 0) top = DefaultTop;
+
+        // usa seu método existente (ele já calcula ranks + campos calculados)
+        var fiis = (await ObterFiisFiltradosAsync(top, ct)).ToList();
+
+        if (fiis.Count == 0)
+        {
+            return new AporteFiltradosResponseDto(
+                ValorTotal: Math.Round(valorTotal, 2),
+                Top: top,
+                ValorInvestido: 0m,
+                SobraCaixa: Math.Round(valorTotal, 2),
+                RendaMensal: 0m,
+                RendaDiaria: 0m,
+                Itens: new List<ItemAporteFiltradoDto>()
+            );
+        }
+
+        var verbaPorFii = valorTotal / fiis.Count;
+
+        var itens = new List<ItemAporteFiltradoDto>();
+        foreach (var f in fiis)
+        {
+            var cotacao = f.Cotacao;
+            var proventoMensal = f.ProventoMensalPorCota;
+
+            var cotas = (cotacao > 0m)
+                ? (int)Math.Floor(verbaPorFii / cotacao)
+                : 0;
+
+            var investido = Math.Round(cotas * cotacao, 2);
+            var rendaMensal = Math.Round(cotas * proventoMensal, 4);
+            var rendaDiaria = Math.Round(rendaMensal / 30.4375m, 6); // média mês
+
+            itens.Add(new ItemAporteFiltradoDto(
+                Papel: f.Papel,
+                Segmento: f.Segmento,
+                Cotacao: cotacao,
+                ProventoMensalPorCota: proventoMensal,
+                Cotas: cotas,
+                ValorInvestido: investido,
+                RendaMensal: rendaMensal,
+                RendaDiaria: rendaDiaria,
+                RankPvp: f.RankPvp,
+                RankDy: f.RankDy,
+                RankLevel: f.RankLevel,
+                DividendYield: f.DividendYield,
+                Pvp: f.Pvp
+            ));
+        }
+
+        var totalInvestido = Math.Round(itens.Sum(x => x.ValorInvestido), 2);
+        var sobra = Math.Round(valorTotal - totalInvestido, 2);
+        var rendaMensalTotal = Math.Round(itens.Sum(x => x.RendaMensal), 4);
+        var rendaDiariaTotal = Math.Round(itens.Sum(x => x.RendaDiaria), 6);
+
+        return new AporteFiltradosResponseDto(
+            ValorTotal: Math.Round(valorTotal, 2),
+            Top: top,
+            ValorInvestido: totalInvestido,
+            SobraCaixa: sobra,
+            RendaMensal: rendaMensalTotal,
+            RendaDiaria: rendaDiariaTotal,
+            Itens: itens
+                .OrderBy(x => x.RankLevel)
+                .ThenBy(x => x.RankPvp)
+                .ThenBy(x => x.RankDy)
+                .ToList()
+        );
+    }
+
 
     // =========================================================
     // PRIVADOS: ranking por tipo, ranking misto, mapeamentos

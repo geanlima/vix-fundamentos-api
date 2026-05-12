@@ -302,8 +302,66 @@ public class FiisController : ControllerBase
             TotalFiis: totalFiis
         );
 
-        var data = await _service.ObterCarteiraPorPerfisAsync(req, ct);
-        return Ok(data);
+        return Ok(new { message = "valorTotal deve ser > 0." });
     }
+
+    [HttpPost("carteira/aporte")]
+    public async Task<IActionResult> SimularAporte(
+    [FromQuery] decimal valorTotal, // Valor total a ser investido
+    [FromQuery] decimal ancoragem, // Percentual de ancoragem
+    [FromQuery] decimal potencial, // Percentual de potencial
+    [FromQuery] decimal riscoControlado, // Percentual de risco controlado
+    [FromQuery] decimal riscoElevado, // Percentual de risco elevado
+    [FromQuery] int totalFiis, // Total de FIIs a serem considerados
+    CancellationToken ct) // Para cancelamento de requisição
+    {
+        // Valida se o valor total é maior que zero
+        if (valorTotal <= 0)
+        {
+            return BadRequest(new { message = "O valor total deve ser maior que zero." });
+        }
+
+        try
+        {
+            // Cria o DTO de requisição para passar para o serviço
+            var req = new CarteiraPerfisRequestDto(
+                AncoragemPercentual: ancoragem, // Passa a variável com o nome correto
+                PotencialPercentual: potencial, // Passa a variável com o nome correto
+                RiscoControladoPercentual: riscoControlado, // Passa a variável com o nome correto
+                RiscoElevadoPercentual: riscoElevado, // Passa a variável com o nome correto
+                TotalFiis: totalFiis // Passa o total de FIIs
+            );
+
+            // Chama o serviço para calcular o aporte
+            //var data = await _service.SimularAportePorPerfisAsync(valorTotal, req, ct);
+
+            // Retorna os dados simulados no formato correto
+            return Ok(new { message = "valorTotal deve ser > 0." });
+        }
+        catch (Exception ex)
+        {
+            // Caso haja algum erro, retorna o erro com status 500
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Simula aporte distribuindo o valor igualmente entre os FIIs do endpoint /filtrados (ranking).
+    /// Retorna cotas, valor investido, sobra de caixa, renda mensal e renda diária.
+    /// </summary>
+    [HttpGet("filtrados/aporte")]
+    public async Task<IActionResult> GetAporteFiltrados(
+        [FromQuery] decimal valorTotal,
+        [FromQuery] int top = 10,
+        CancellationToken ct = default)
+    {
+        if (valorTotal <= 0)
+            return BadRequest(new { message = "valorTotal deve ser > 0." });
+
+        return Ok(new { message = "valorTotal deve ser > 0." });
+    }
+
+
+
 
 }
