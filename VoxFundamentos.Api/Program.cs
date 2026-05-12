@@ -31,7 +31,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-//app.UseHttpsRedirection();
+app.UseHttpsRedirection();
 
 // CORS (ANTES do MapControllers)
 app.UseCors("web");
