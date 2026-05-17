@@ -3,7 +3,7 @@
 public record FiiRankingDto(
     string Papel,
     string? Segmento,
-    decimal Cotacao,
+    decimal PrecoParaComprar,
     decimal DividendYield,
     decimal Pvp,
     decimal ValorMercado,

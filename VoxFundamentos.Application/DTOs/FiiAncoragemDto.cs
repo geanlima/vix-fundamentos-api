@@ -3,7 +3,7 @@
 public record FiiAncoragemDto(
     string Papel,
     string Segmento,
-    decimal Cotacao,
+    decimal PrecoParaComprar,
     decimal FfoYield,
     decimal DividendYield,
     decimal Pvp,

@@ -20,9 +20,9 @@ public class FiisController : ControllerBase
     ///
     /// O que traz:
     /// - Lista de FIIs (atualmente com TAKE(10) no service)
-    /// - Campos básicos: cotação, DY, P/VP, liquidez, valor de mercado, vacância etc.
+    /// - Campos básicos: precoParaComprar (cotação atual), DY, P/VP, liquidez, valor de mercado, vacância etc.
     /// - Campos calculados: dividendo por cota (12m), provento mensal/diário, DY mensal,
-    ///   número mágico de cotas e valor para atingir o “número mágico”.
+    ///   receberPorMes/receberPorDia (use qtdCotas), número mágico e investirParaNumeroMagico.
     ///
     /// Bom:
     /// - Bom para “visão geral” e testar a API rapidamente.
@@ -33,9 +33,9 @@ public class FiisController : ControllerBase
     /// - Pode ter chamadas concorrentes ao scraper (custo/latência).
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Get(CancellationToken ct)
+    public async Task<IActionResult> Get([FromQuery] int qtdCotas = 1, CancellationToken ct = default)
     {
-        var data = await _service.ObterFiisAsync(ct);
+        var data = await _service.ObterFiisAsync(qtdCotas, ct);
         return Ok(data);
     }
 
@@ -45,7 +45,7 @@ public class FiisController : ControllerBase
     /// O que traz:
     /// - O FII do papel informado (ex: HGLG11)
     /// - Campos do Fundamentus + dividendo por cota (12m)
-    /// - Cálculos: provento mensal/diário, DY mensal, número mágico e valor do número mágico.
+    /// - Cálculos: provento mensal/diário, receberPorMes/receberPorDia (qtdCotas), número mágico e investirParaNumeroMagico.
     ///
     /// Bom:
     /// - Ideal para detalhar um fundo antes de investir.
@@ -56,9 +56,12 @@ public class FiisController : ControllerBase
     /// - “Dividendo por cota 12m / 12” é uma média: não garante o pagamento futuro.
     /// </summary>
     [HttpGet("{papel}")]
-    public async Task<IActionResult> GetByPapel(string papel, CancellationToken ct)
+    public async Task<IActionResult> GetByPapel(
+        string papel,
+        [FromQuery] int qtdCotas = 1,
+        CancellationToken ct = default)
     {
-        var fii = await _service.ObterPorPapelAsync(papel, ct);
+        var fii = await _service.ObterPorPapelAsync(papel, qtdCotas, ct);
 
         if (fii is null)
             return NotFound(new { message = $"FII '{papel}' não encontrado." });
@@ -87,9 +90,9 @@ public class FiisController : ControllerBase
     /// - É um filtro “quantitativo”: serve para shortlist, não decisão final.
     /// </summary>
     [HttpGet("filtrados")]
-    public async Task<IActionResult> GetFiltrados(CancellationToken ct)
+    public async Task<IActionResult> GetFiltrados([FromQuery] int qtdCotas = 1, CancellationToken ct = default)
     {
-        var data = await _service.ObterFiisFiltradosAsync(ct);
+        var data = await _service.ObterFiisFiltradosAsync(qtdCotas, ct);
         return Ok(data);
     }
 
@@ -216,6 +219,7 @@ public class FiisController : ControllerBase
     ///
     /// Bom:
     /// - Monta uma carteira base rápida e consistente.
+    /// - Cada item inclui receberPorMes e receberPorDia (por 1 cota) e investirParaNumeroMagico.
     /// - Evita concentração excessiva (teto por ativo).
     ///
     /// Ruim / cuidados:
@@ -223,7 +227,8 @@ public class FiisController : ControllerBase
     /// - Serve como sugestão inicial; não substitui análise de RG.
     /// </summary>
     [HttpGet("carteira/sugerida")]
-    public async Task<IActionResult> GetCarteiraSugerida(CancellationToken ct)
+    [HttpGet("sugestao-carteira")]
+    public async Task<IActionResult> GetCarteiraSugerida(CancellationToken ct = default)
     {
         var data = await _service.ObterCarteiraSugeridaAsync(ct);
         return Ok(data);
@@ -251,7 +256,7 @@ public class FiisController : ControllerBase
         [FromQuery] int qtdTijolo,
         [FromQuery] int qtdPapel,
         [FromQuery] int qtdRisco,
-        CancellationToken ct)
+        CancellationToken ct = default)
     {
         var req = new CarteiraParamRequestDto(
             PesoTijoloPercentual: pesoTijolo,
@@ -272,7 +277,7 @@ public class FiisController : ControllerBase
     [FromQuery] decimal pesoPapel,
     [FromQuery] decimal pesoRisco,
     [FromQuery] int totalFiis,
-    CancellationToken ct)
+    CancellationToken ct = default)
     {
         var req = new CarteiraPercentualRequestDto(
             PesoTijoloPercentual: pesoTijolo,
@@ -292,7 +297,8 @@ public class FiisController : ControllerBase
     [FromQuery] decimal riscoControlado,
     [FromQuery] decimal riscoElevado,
     [FromQuery] int totalFiis,
-    CancellationToken ct)
+    [FromQuery] int qtdCotas = 1,
+    CancellationToken ct = default)
     {
         var req = new CarteiraPerfisRequestDto(
             AncoragemPercentual: ancoragem,
@@ -302,7 +308,8 @@ public class FiisController : ControllerBase
             TotalFiis: totalFiis
         );
 
-        return Ok(new { message = "valorTotal deve ser > 0." });
+        var data = await _service.ObterCarteiraPorPerfisAsync(req, qtdCotas, ct);
+        return Ok(data);
     }
 
     [HttpPost("carteira/aporte")]
@@ -332,11 +339,8 @@ public class FiisController : ControllerBase
                 TotalFiis: totalFiis // Passa o total de FIIs
             );
 
-            // Chama o serviço para calcular o aporte
-            //var data = await _service.SimularAportePorPerfisAsync(valorTotal, req, ct);
-
-            // Retorna os dados simulados no formato correto
-            return Ok(new { message = "valorTotal deve ser > 0." });
+            var data = await _service.SimularAportePorPerfisAsync(valorTotal, req, ct);
+            return Ok(data);
         }
         catch (Exception ex)
         {
@@ -358,7 +362,8 @@ public class FiisController : ControllerBase
         if (valorTotal <= 0)
             return BadRequest(new { message = "valorTotal deve ser > 0." });
 
-        return Ok(new { message = "valorTotal deve ser > 0." });
+        var data = await _service.SimularAporteFiisFiltradosAsync(valorTotal, top, ct);
+        return Ok(data);
     }
 
 
