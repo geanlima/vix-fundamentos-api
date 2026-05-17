@@ -170,6 +170,35 @@ public class FiisController : ControllerBase
     }
 
     /// <summary>
+    /// Ranking unificado Top 10 FIIs (Tijolo + Papel + Risco Confiável).
+    ///
+    /// O que traz:
+    /// - Combina os melhores FIIs de tijolo, papel e risco confiável num único ranking
+    /// - Ordena por Score (0..10) desc → Liquidez desc
+    /// - Remove duplicatas (um FII pode estar em mais de um sub-ranking)
+    /// - Motivos: lista completa com pontos fortes e pontos de atenção de cada FII
+    ///   (prefixo "⚠" indica alertas; sem prefixo indica pontos positivos)
+    /// - TotalAnalisados: total considerado antes do corte Top 10
+    ///
+    /// Bom:
+    /// - Visão consolidada pronta para dashboard ou app
+    /// - Score e Motivos tornam a seleção explicável ao usuário final
+    /// - Distingue Tipo (TIJOLO/PAPEL/HIBRIDO) e Perfil (Ancoragem/Potencial/Risco Controlado)
+    ///
+    /// Cuidados:
+    /// - Ranking v1 (sem WAULT/LTV/inadimplência — planejado para v2)
+    /// - Serve como shortlist; análise do Relatório Gerencial continua necessária
+    /// - Dados com cache de 6h (Fundamentus)
+    /// </summary>
+    [HttpGet("ranking/top10")]
+    [ProducesResponseType(typeof(FiiTop10ResponseDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTop10(CancellationToken ct = default)
+    {
+        var data = await _service.ObterTop10Async(ct);
+        return Ok(data);
+    }
+
+    /// <summary>
     /// Ranking de FIIs classificados como "Risco Confiável".
     /// 
     /// 🔹 O que traz:

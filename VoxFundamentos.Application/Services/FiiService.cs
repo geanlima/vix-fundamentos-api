@@ -124,6 +124,64 @@ public class FiiService : IFiiService
             .ToList();
     }
 
+    /// <summary>
+    /// Ranking unificado Top 10: combina Tijolo + Papel + Risco Confiável,
+    /// ordena por Score desc → Liquidez desc, remove duplicatas e retorna os 10 melhores.
+    /// Motivos substituídos por explicação completa (positivos + atenção) via FiiScoreRules.GerarMotivosTop10.
+    /// </summary>
+    public async Task<FiiTop10ResponseDto> ObterTop10Async(CancellationToken ct)
+    {
+        var taskTijolo = ObterRankingPorTipoAsync("TIJOLO", 60, ct);
+        var taskPapel = ObterRankingPorTipoAsync("PAPEL", 60, ct);
+        var taskRisco = ObterRiscoConfiavelAsync(20, ct);
+
+        await Task.WhenAll(taskTijolo, taskPapel, taskRisco);
+
+        var tijolo = await taskTijolo;
+        var papel = await taskPapel;
+        var risco = (await taskRisco).ToList();
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var merged = new List<FiiRankingDto>();
+
+        foreach (var f in tijolo.Concat(papel).Concat(risco))
+        {
+            if (seen.Add(f.Papel))
+                merged.Add(f);
+        }
+
+        var totalAnalisados = merged.Count;
+
+        var top10 = merged
+            .OrderByDescending(f => f.Score)
+            .ThenByDescending(f => f.Liquidez)
+            .Take(10)
+            .Select((f, idx) => new FiiTop10ItemDto(
+                Posicao: idx + 1,
+                Papel: f.Papel,
+                Segmento: f.Segmento,
+                Tipo: f.Tipo,
+                Perfil: FiiScoreRules.ClassificarPerfil(f),
+                Risco: f.Risco,
+                Score: f.Score,
+                PrecoParaComprar: f.PrecoParaComprar,
+                DividendYield: f.DividendYield,
+                Pvp: f.Pvp,
+                Liquidez: f.Liquidez,
+                ValorMercado: f.ValorMercado,
+                VacanciaMedia: f.VacanciaMedia,
+                QuantidadeImoveis: f.QuantidadeImoveis,
+                Motivos: FiiScoreRules.GerarMotivosTop10(f)
+            ))
+            .ToList();
+
+        return new FiiTop10ResponseDto(
+            Itens: top10,
+            TotalAnalisados: totalAnalisados,
+            GeradoEm: DateTimeOffset.UtcNow
+        );
+    }
+
     // =========================================================
     // 5) CARTEIRAS
     // =========================================================

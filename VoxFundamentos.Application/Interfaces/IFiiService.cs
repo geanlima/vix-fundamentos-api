@@ -18,4 +18,5 @@ public interface IFiiService
     Task<CarteiraPerfisFiiResponseDto> ObterCarteiraPorPerfisAsync(CarteiraPerfisRequestDto req, int qtdCotas, CancellationToken ct);
     Task<CarteiraAporteResponseDto> SimularAportePorPerfisAsync(decimal valorTotal, CarteiraPerfisRequestDto req, CancellationToken ct);
     Task<AporteFiltradosResponseDto> SimularAporteFiisFiltradosAsync(decimal valorTotal, int top, CancellationToken ct);
+    Task<FiiTop10ResponseDto> ObterTop10Async(CancellationToken ct);
 }
