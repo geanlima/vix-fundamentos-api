@@ -16,5 +16,6 @@ public interface IFiiService
     Task<CarteiraSugeridaDto> ObterCarteiraParametrizadaAsync(CarteiraParamRequestDto req, CancellationToken ct);
     Task<CarteiraSugeridaDto> ObterCarteiraPorPercentualETotalAsync(CarteiraPercentualRequestDto req, CancellationToken ct);
     Task<CarteiraPerfisFiiResponseDto> ObterCarteiraPorPerfisAsync(CarteiraPerfisRequestDto req, int qtdCotas, CancellationToken ct);
-
+    Task<CarteiraAporteResponseDto> SimularAportePorPerfisAsync(decimal valorTotal, CarteiraPerfisRequestDto req, CancellationToken ct);
+    Task<AporteFiltradosResponseDto> SimularAporteFiisFiltradosAsync(decimal valorTotal, int top, CancellationToken ct);
 }
