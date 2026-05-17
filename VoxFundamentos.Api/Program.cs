@@ -1,10 +1,14 @@
+using VoxFundamentos.Api.Filters;
 using VoxFundamentos.Application;
 using VoxFundamentos.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Controllers + Swagger
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ArgumentExceptionFilter>();
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

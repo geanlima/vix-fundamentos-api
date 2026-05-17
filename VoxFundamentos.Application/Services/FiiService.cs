@@ -27,30 +27,30 @@ public class FiiService : IFiiService
     // 1) LISTAGEM BÁSICA (com campos calculados) - TOP parametrizável
     // =========================================================
 
-    public async Task<IEnumerable<FiiDto>> ObterFiisAsync(CancellationToken ct)
-        => await ObterFiisAsync(top: DefaultTop, ct);
+    public async Task<IEnumerable<FiiDto>> ObterFiisAsync(int qtdCotas, CancellationToken ct)
+        => await ObterFiisAsync(top: DefaultTop, qtdCotas, ct);
 
-    // ✅ overload interno (se você quiser expor no IFiiService, pode)
-    private async Task<IEnumerable<FiiDto>> ObterFiisAsync(int top, CancellationToken ct)
+    private async Task<IEnumerable<FiiDto>> ObterFiisAsync(int top, int qtdCotas, CancellationToken ct)
     {
         if (top <= 0) top = DefaultTop;
+        ValidarQtdCotas(qtdCotas);
 
-        // Pega todos do Fundamentus e só então aplica Top (como você pediu)
         var fiis = (await _repo.ObterTodosAsync(ct))
             .OrderBy(f => f.Papel, StringComparer.OrdinalIgnoreCase)
             .Take(top)
             .ToList();
 
-        return await MapearFiiDtoComCamposCalculadosAsync(fiis, DefaultMaxConcorrencia, ct);
+        return await MapearFiiDtoComCamposCalculadosAsync(fiis, DefaultMaxConcorrencia, qtdCotas, ct);
     }
 
-    public async Task<FiiDto?> ObterPorPapelAsync(string papel, CancellationToken ct)
+    public async Task<FiiDto?> ObterPorPapelAsync(string papel, int qtdCotas, CancellationToken ct)
     {
+        ValidarQtdCotas(qtdCotas);
+
         var fii = await _repo.ObterPorPapelAsync(papel, ct);
         if (fii is null) return null;
 
-        var dto = await MapearFiiDtoComCamposCalculadosAsync(fii, ct);
-        return dto;
+        return await MapearFiiDtoComCamposCalculadosAsync(fii, qtdCotas, ct);
     }
 
     // =========================================================
@@ -128,52 +128,16 @@ public class FiiService : IFiiService
     // 5) CARTEIRAS
     // =========================================================
 
-    public async Task<CarteiraSugeridaDto> ObterCarteiraSugeridaAsync(CancellationToken ct)
-    {
-        // Regras de alocação
-        const decimal pesoTijolo = 60m;
-        const decimal pesoPapel = 35m;
-        const decimal pesoRisco = 5m;
-
-        // Regras de construção
-        const int qtdTijolo = 6;
-        const int qtdPapel = 5;
-        const int qtdRisco = 2;
-
-        const decimal maxPorAtivo = 15m;
-        const decimal minLiquidezGeral = 800_000m;
-
-        // Base grande para seleção
-        var baseTijolo = (await ObterRankingPorTipoAsync("TIJOLO", top: 120, ct))
-            .Where(x => x.Liquidez >= minLiquidezGeral)
-            .ToList();
-
-        var basePapel = (await ObterRankingPorTipoAsync("PAPEL", top: 120, ct))
-            .Where(x => x.Liquidez >= minLiquidezGeral)
-            .ToList();
-
-        var baseRisco = (await ObterRiscoConfiavelAsync(top: 120, ct))
-            .ToList();
-
-        var escolhidosTijolo = baseTijolo.Take(qtdTijolo).ToList();
-        var escolhidosPapel = basePapel.Take(qtdPapel).ToList();
-        var escolhidosRisco = baseRisco.Take(qtdRisco).ToList();
-
-        var itens = new List<CarteiraSugeridaItemDto>();
-        itens.AddRange(DistribuirPeso(escolhidosTijolo, "TIJOLO", pesoTijolo, maxPorAtivo));
-        itens.AddRange(DistribuirPeso(escolhidosPapel, "PAPEL", pesoPapel, maxPorAtivo));
-        itens.AddRange(DistribuirPeso(escolhidosRisco, "RISCO", pesoRisco, maxPorAtivo));
-
-        NormalizarParaCem(itens);
-
-        return new CarteiraSugeridaDto(
-            PesoTijoloPercentual: pesoTijolo,
-            PesoPapelPercentual: pesoPapel,
-            PesoRiscoPercentual: pesoRisco,
-            TotalAtivos: itens.Count,
-            Itens: itens
-        );
-    }
+    public Task<CarteiraSugeridaDto> ObterCarteiraSugeridaAsync(CancellationToken ct)
+        => ObterCarteiraParametrizadaAsync(
+            new CarteiraParamRequestDto(
+                PesoTijoloPercentual: 60m,
+                PesoPapelPercentual: 35m,
+                PesoRiscoPercentual: 5m,
+                QtdTijolo: 6,
+                QtdPapel: 5,
+                QtdRisco: 2),
+            ct);
 
     public async Task<CarteiraSugeridaDto> ObterCarteiraParametrizadaAsync(CarteiraParamRequestDto req, CancellationToken ct)
     {
@@ -190,11 +154,29 @@ public class FiiService : IFiiService
         if (req.QtdTijolo + req.QtdPapel + req.QtdRisco <= 0)
             throw new ArgumentException("Informe pelo menos 1 ativo no total.");
 
+        return await MontarCarteiraPorTipoAsync(
+            req.PesoTijoloPercentual,
+            req.PesoPapelPercentual,
+            req.PesoRiscoPercentual,
+            req.QtdTijolo,
+            req.QtdPapel,
+            req.QtdRisco,
+            ct);
+    }
+
+    private async Task<CarteiraSugeridaDto> MontarCarteiraPorTipoAsync(
+        decimal pesoTijolo,
+        decimal pesoPapel,
+        decimal pesoRisco,
+        int qtdTijolo,
+        int qtdPapel,
+        int qtdRisco,
+        CancellationToken ct)
+    {
         const decimal maxPorAtivo = 15m;
         const decimal minLiquidezGeral = 800_000m;
 
-        // base grande para filtrar e ainda ter quantidade
-        var baseSize = Math.Max(120, (req.QtdTijolo + req.QtdPapel + req.QtdRisco) * 10);
+        var baseSize = Math.Max(120, (qtdTijolo + qtdPapel + qtdRisco) * 10);
 
         var rankingTijolo = (await ObterRankingPorTipoAsync("TIJOLO", baseSize, ct))
             .Where(x => x.Liquidez >= minLiquidezGeral)
@@ -206,21 +188,30 @@ public class FiiService : IFiiService
 
         var rankingRisco = (await ObterRiscoConfiavelAsync(baseSize, ct)).ToList();
 
-        var escolhidosTijolo = rankingTijolo.Take(req.QtdTijolo).ToList();
-        var escolhidosPapel = rankingPapel.Take(req.QtdPapel).ToList();
-        var escolhidosRisco = rankingRisco.Take(req.QtdRisco).ToList();
+        var usados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var escolhidosTijolo = Pick(rankingTijolo, qtdTijolo, usados);
+        var escolhidosPapel = Pick(rankingPapel, qtdPapel, usados);
+        var escolhidosRisco = Pick(rankingRisco, qtdRisco, usados);
+
+        (pesoTijolo, pesoPapel, pesoRisco) = RedistribuirPesosBucketsVazios(
+            pesoTijolo,
+            pesoPapel,
+            pesoRisco,
+            escolhidosTijolo.Count > 0,
+            escolhidosPapel.Count > 0,
+            escolhidosRisco.Count > 0);
 
         var itens = new List<CarteiraSugeridaItemDto>();
-        itens.AddRange(DistribuirPeso(escolhidosTijolo, "TIJOLO", req.PesoTijoloPercentual, maxPorAtivo));
-        itens.AddRange(DistribuirPeso(escolhidosPapel, "PAPEL", req.PesoPapelPercentual, maxPorAtivo));
-        itens.AddRange(DistribuirPeso(escolhidosRisco, "RISCO", req.PesoRiscoPercentual, maxPorAtivo));
+        itens.AddRange(await CriarItensCarteiraAsync(escolhidosTijolo, "TIJOLO", pesoTijolo, maxPorAtivo, ct));
+        itens.AddRange(await CriarItensCarteiraAsync(escolhidosPapel, "PAPEL", pesoPapel, maxPorAtivo, ct));
+        itens.AddRange(await CriarItensCarteiraAsync(escolhidosRisco, "RISCO", pesoRisco, maxPorAtivo, ct));
 
-        NormalizarParaCem(itens);
+        CorrigirArredondamentoGlobal(itens, maxPorAtivo);
 
         return new CarteiraSugeridaDto(
-            PesoTijoloPercentual: req.PesoTijoloPercentual,
-            PesoPapelPercentual: req.PesoPapelPercentual,
-            PesoRiscoPercentual: req.PesoRiscoPercentual,
+            PesoTijoloPercentual: pesoTijolo,
+            PesoPapelPercentual: pesoPapel,
+            PesoRiscoPercentual: pesoRisco,
             TotalAtivos: itens.Count,
             Itens: itens
         );
@@ -260,8 +251,11 @@ public class FiiService : IFiiService
 
     public async Task<CarteiraPerfisFiiResponseDto> ObterCarteiraPorPerfisAsync(
         CarteiraPerfisRequestDto req,
+        int qtdCotas,
         CancellationToken ct)
     {
+        ValidarQtdCotas(qtdCotas);
+
         if (req.TotalFiis <= 0)
             throw new ArgumentException("TotalFiis deve ser > 0.");
 
@@ -347,7 +341,8 @@ public class FiiService : IFiiService
                 return fii.ToDto(
                     dividendoPorCota12m: divCota12m,
                     tipo: tipoFinal,
-                    motivos: motivos
+                    motivos: motivos,
+                    qtdCotas: qtdCotas
                 );
             }
             finally
@@ -382,7 +377,7 @@ public class FiiService : IFiiService
         var rankingTmp = new FiiRankingDto(
             Papel: f.Papel,
             Segmento: f.Segmento,
-            Cotacao: f.Cotacao,
+            PrecoParaComprar: f.Cotacao,
             DividendYield: f.DividendYield,
             Pvp: f.Pvp,
             ValorMercado: f.ValorMercado,
@@ -420,12 +415,13 @@ public class FiiService : IFiiService
     }
 
 
-    public async Task<IEnumerable<FiiDto>> ObterFiisFiltradosAsync(CancellationToken ct)
-        => await ObterFiisFiltradosAsync(top: DefaultTop, ct);
+    public async Task<IEnumerable<FiiDto>> ObterFiisFiltradosAsync(int qtdCotas, CancellationToken ct)
+        => await ObterFiisFiltradosAsync(top: DefaultTop, qtdCotas, ct);
 
-    private async Task<IEnumerable<FiiDto>> ObterFiisFiltradosAsync(int top, CancellationToken ct)
+    private async Task<IEnumerable<FiiDto>> ObterFiisFiltradosAsync(int top, int qtdCotas, CancellationToken ct)
     {
         if (top <= 0) top = DefaultTop;
+        ValidarQtdCotas(qtdCotas);
 
         var selic = await _indicadores.ObterSelicAtualAsync(ct);
 
@@ -479,7 +475,7 @@ public class FiiService : IFiiService
             .ToList();
 
         // Mapeia com campos calculados (div/cota, etc)
-        var dtos = await MapearFiiDtoComCamposCalculadosAsync(topBase.Select(x => x.Fii).ToList(), DefaultMaxConcorrencia, ct);
+        var dtos = await MapearFiiDtoComCamposCalculadosAsync(topBase.Select(x => x.Fii).ToList(), DefaultMaxConcorrencia, qtdCotas, ct);
 
         // reintroduz ranks
         var dtoMap = dtos.ToDictionary(x => x.Papel, x => x, StringComparer.OrdinalIgnoreCase);
@@ -528,7 +524,7 @@ public class FiiService : IFiiService
                 return new FiiRankingDto(
                     Papel: f.Papel,
                     Segmento: f.Segmento,
-                    Cotacao: f.Cotacao,
+                    PrecoParaComprar: f.PrecoParaComprar,
                     DividendYield: f.DividendYield,
                     Pvp: f.Pvp,
                     ValorMercado: f.ValorMercado,
@@ -569,7 +565,7 @@ public class FiiService : IFiiService
     => new FiiAncoragemDto(
         Papel: f.Papel,
         Segmento: f.Segmento,
-        Cotacao: f.Cotacao,
+        PrecoParaComprar: f.Cotacao,
         FfoYield: f.FfoYield,
         DividendYield: f.DividendYield,
         Pvp: f.Pvp,
@@ -584,9 +580,10 @@ public class FiiService : IFiiService
 
 
     private async Task<List<FiiDto>> MapearFiiDtoComCamposCalculadosAsync(
-    List<Fii> fiis,
-    int maxConcorrencia,
-    CancellationToken ct)
+        List<Fii> fiis,
+        int maxConcorrencia,
+        int qtdCotas,
+        CancellationToken ct)
     {
         using var sem = new SemaphoreSlim(maxConcorrencia);
 
@@ -602,7 +599,8 @@ public class FiiService : IFiiService
                 return f.ToDto(
                     dividendoPorCota12m: divCota12m,
                     tipo: tipo,
-                    motivos: motivos
+                    motivos: motivos,
+                    qtdCotas: qtdCotas
                 );
             }
             finally
@@ -614,10 +612,7 @@ public class FiiService : IFiiService
         return (await Task.WhenAll(tasks)).ToList();
     }
 
-
-
-
-    private async Task<FiiDto> MapearFiiDtoComCamposCalculadosAsync(Fii f, CancellationToken ct)
+    private async Task<FiiDto> MapearFiiDtoComCamposCalculadosAsync(Fii f, int qtdCotas, CancellationToken ct)
     {
         var divCota12m = await _repo.ObterDividendoPorCotaAsync(f.Papel, ct) ?? 0m;
 
@@ -626,8 +621,15 @@ public class FiiService : IFiiService
         return f.ToDto(
             dividendoPorCota12m: divCota12m,
             tipo: tipo,
-            motivos: motivos
+            motivos: motivos,
+            qtdCotas: qtdCotas
         );
+    }
+
+    private static void ValidarQtdCotas(int qtdCotas)
+    {
+        if (qtdCotas < 0)
+            throw new ArgumentException("A quantidade de cotas (qtdCotas) não pode ser negativa.");
     }
 
     private static string[] MotivosPerfil(FiiAncoragemDto f, string perfil, string tipoFundo, string risco, decimal score)
@@ -766,49 +768,175 @@ public class FiiService : IFiiService
         return (a, p, rc, re);
     }
 
-    private static List<CarteiraSugeridaItemDto> DistribuirPeso(
+    private async Task<List<CarteiraSugeridaItemDto>> CriarItensCarteiraAsync(
         List<FiiRankingDto> selecionados,
         string tipoCarteira,
         decimal pesoBucket,
-        decimal maxPorAtivo)
+        decimal maxPorAtivo,
+        CancellationToken ct)
     {
         if (selecionados.Count == 0) return new List<CarteiraSugeridaItemDto>();
 
-        var pesoBase = Math.Round(pesoBucket / selecionados.Count, 2);
-        if (pesoBase > maxPorAtivo) pesoBase = maxPorAtivo;
+        var pesos = AlocarPesosComTeto(selecionados.Count, pesoBucket, maxPorAtivo);
 
-        return selecionados.Select(f => new CarteiraSugeridaItemDto(
-            Papel: f.Papel,
-            Tipo: tipoCarteira,
-            Score: f.Score,
-            Risco: f.Risco,
-            PesoPercentual: pesoBase,
-            Cotacao: f.Cotacao,
-            DividendYield: f.DividendYield,
-            Pvp: f.Pvp,
-            Liquidez: f.Liquidez,
-            ValorMercado: f.ValorMercado,
-            Segmento: f.Segmento,
-            Motivos: f.Motivos
-        )).ToList();
+        var itens = new CarteiraSugeridaItemDto[selecionados.Count];
+        using var sem = new SemaphoreSlim(DefaultMaxConcorrencia);
+
+        var tasks = Enumerable.Range(0, selecionados.Count).Select(async i =>
+        {
+            var f = selecionados[i];
+
+            await sem.WaitAsync(ct);
+            try
+            {
+                var divCota12m = await _repo.ObterDividendoPorCotaAsync(f.Papel, ct) ?? 0m;
+                var proventos = FiiMapper.CalcularProventos(f.PrecoParaComprar, divCota12m, qtdCotas: 1);
+
+                itens[i] = new CarteiraSugeridaItemDto(
+                    Papel: f.Papel,
+                    Tipo: tipoCarteira,
+                    Score: f.Score,
+                    Risco: f.Risco,
+                    PesoPercentual: pesos[i],
+                    PrecoParaComprar: f.PrecoParaComprar,
+                    DividendYield: f.DividendYield,
+                    Pvp: f.Pvp,
+                    Liquidez: f.Liquidez,
+                    ValorMercado: f.ValorMercado,
+                    Segmento: f.Segmento,
+                    Motivos: f.Motivos,
+                    ReceberPorMes: proventos.ReceberPorMes,
+                    ReceberPorDia: proventos.ReceberPorDia,
+                    QtdCotasNumeroMagico: proventos.QtdCotasNumeroMagico,
+                    InvestirParaNumeroMagico: proventos.InvestirParaNumeroMagico
+                );
+            }
+            finally
+            {
+                sem.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
+        return itens.ToList();
     }
 
-    private static void NormalizarParaCem(List<CarteiraSugeridaItemDto> itens)
+    /// <summary>
+    /// Divide o peso do bucket entre N ativos sem ultrapassar o teto por posição.
+    /// </summary>
+    private static decimal[] AlocarPesosComTeto(int quantidade, decimal totalAlvo, decimal tetoPorPosicao)
+    {
+        if (quantidade <= 0)
+            return Array.Empty<decimal>();
+
+        var pesos = new decimal[quantidade];
+        var restante = Math.Round(totalAlvo, 2);
+        var ativos = Enumerable.Range(0, quantidade).ToHashSet();
+
+        const int maxIteracoes = 500;
+        var iteracao = 0;
+
+        while (restante > 0m && ativos.Count > 0 && iteracao++ < maxIteracoes)
+        {
+            var parcela = Math.Round(restante / ativos.Count, 2);
+            if (parcela <= 0m)
+                parcela = 0.01m;
+
+            var semEspaco = new List<int>();
+
+            foreach (var i in ativos)
+            {
+                var espaco = Math.Round(tetoPorPosicao - pesos[i], 2);
+                if (espaco <= 0m)
+                {
+                    semEspaco.Add(i);
+                    continue;
+                }
+
+                var add = Math.Min(parcela, espaco);
+                pesos[i] = Math.Round(pesos[i] + add, 2);
+                restante = Math.Round(restante - add, 2);
+
+                if (pesos[i] >= tetoPorPosicao)
+                    semEspaco.Add(i);
+            }
+
+            foreach (var i in semEspaco)
+                ativos.Remove(i);
+        }
+
+        return pesos;
+    }
+
+    /// <summary>
+    /// Se um bucket não tiver ativos, redistribui o percentual entre os buckets que tiveram seleção.
+    /// </summary>
+    private static (decimal pesoTijolo, decimal pesoPapel, decimal pesoRisco) RedistribuirPesosBucketsVazios(
+        decimal pesoTijolo,
+        decimal pesoPapel,
+        decimal pesoRisco,
+        bool temTijolo,
+        bool temPapel,
+        bool temRisco)
+    {
+        var orfao = 0m;
+        if (!temTijolo) { orfao += pesoTijolo; pesoTijolo = 0m; }
+        if (!temPapel) { orfao += pesoPapel; pesoPapel = 0m; }
+        if (!temRisco) { orfao += pesoRisco; pesoRisco = 0m; }
+
+        if (orfao <= 0m)
+            return (pesoTijolo, pesoPapel, pesoRisco);
+
+        var baseSoma = pesoTijolo + pesoPapel + pesoRisco;
+        if (baseSoma <= 0m)
+            return (pesoTijolo, pesoPapel, pesoRisco);
+
+        pesoTijolo = Math.Round(pesoTijolo + orfao * (pesoTijolo / baseSoma), 2);
+        pesoPapel = Math.Round(pesoPapel + orfao * (pesoPapel / baseSoma), 2);
+        pesoRisco = Math.Round(pesoRisco + orfao * (pesoRisco / baseSoma), 2);
+
+        var diff = Math.Round(100m - (pesoTijolo + pesoPapel + pesoRisco), 2);
+        if (diff != 0m)
+        {
+            if (temTijolo) pesoTijolo = Math.Round(pesoTijolo + diff, 2);
+            else if (temPapel) pesoPapel = Math.Round(pesoPapel + diff, 2);
+            else pesoRisco = Math.Round(pesoRisco + diff, 2);
+        }
+
+        return (pesoTijolo, pesoPapel, pesoRisco);
+    }
+
+    private static void CorrigirArredondamentoGlobal(List<CarteiraSugeridaItemDto> itens, decimal maxPorAtivo)
     {
         if (itens.Count == 0) return;
 
-        var soma = itens.Sum(i => i.PesoPercentual);
-        var diff = Math.Round(100m - soma, 2);
+        var diff = Math.Round(100m - itens.Sum(i => i.PesoPercentual), 2);
         if (diff == 0m) return;
 
-        var maxScore = itens.Max(i => i.Score);
-        var best = itens.FirstOrDefault(i => i.Score == maxScore) ?? itens[0];
-        var idx = itens.IndexOf(best);
+        var candidatos = itens
+            .Select((item, idx) => (item, idx))
+            .OrderByDescending(x => maxPorAtivo - x.item.PesoPercentual)
+            .ThenByDescending(x => x.item.Score)
+            .ToList();
 
-        itens[idx] = itens[idx] with
+        foreach (var (item, idx) in candidatos)
         {
-            PesoPercentual = Math.Round(itens[idx].PesoPercentual + diff, 2)
-        };
+            if (diff == 0m) break;
+
+            var espaco = Math.Round(maxPorAtivo - item.PesoPercentual, 2);
+            if (diff > 0m && espaco <= 0m) continue;
+
+            var ajuste = diff > 0m
+                ? Math.Min(diff, espaco)
+                : Math.Max(diff, -item.PesoPercentual);
+
+            itens[idx] = item with
+            {
+                PesoPercentual = Math.Round(item.PesoPercentual + ajuste, 2)
+            };
+
+            diff = Math.Round(diff - ajuste, 2);
+        }
     }
 
     private static bool IsShopping(string? segmento)

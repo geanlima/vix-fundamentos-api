@@ -12,14 +12,11 @@ public static class FiiMapper
     string[]? motivos = null,
     int rankPvp = 0,
     int rankDy = 0,
-    decimal rankLevel = 0m)
+    decimal rankLevel = 0m,
+    int qtdCotas = 1)
     {
-        var proventoMensal = CalcularProventoMensalPeloDivCota(dividendoPorCota12m);
-        var proventoDiario = CalcularProventoDiario(proventoMensal);
-        var dyMensal = CalcularDyMensalPeloProvento(f.Cotacao, proventoMensal);
-
-        var qtdCotasNumeroMagico = CalcularQtdCotasNumeroMagico(f.Cotacao, proventoMensal);
-        var valorParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, f.Cotacao);
+        var proventos = CalcularProventos(f.Cotacao, dividendoPorCota12m, qtdCotas);
+        var dyMensal = CalcularDyMensalPeloProvento(f.Cotacao, proventos.ProventoMensalPorCota);
 
         return new FiiDto(
             RankPvp: rankPvp,
@@ -27,7 +24,7 @@ public static class FiiMapper
             RankLevel: rankLevel,
             Papel: f.Papel,
             Segmento: f.Segmento,
-            Cotacao: f.Cotacao,
+            PrecoParaComprar: f.Cotacao,
             FfoYield: f.FfoYield,
             DividendYield: f.DividendYield,
             Pvp: f.Pvp,
@@ -40,10 +37,13 @@ public static class FiiMapper
             VacanciaMedia: f.VacanciaMedia,
             DividendoPorCota: dividendoPorCota12m,
             DyMensal: dyMensal,
-            ProventoMensalPorCota: proventoMensal,
-            ProventoDiarioPorCota: proventoDiario,
-            QtdCotasNumeroMagico: qtdCotasNumeroMagico,
-            ValorParaNumeroMagico: valorParaNumeroMagico,
+            ProventoMensalPorCota: proventos.ProventoMensalPorCota,
+            ProventoDiarioPorCota: proventos.ProventoDiarioPorCota,
+            ReceberPorMes: proventos.ReceberPorMes,
+            ReceberPorDia: proventos.ReceberPorDia,
+            QtdCotasNumeroMagico: proventos.QtdCotasNumeroMagico,
+            ValorParaNumeroMagico: proventos.InvestirParaNumeroMagico,
+            InvestirParaNumeroMagico: proventos.InvestirParaNumeroMagico,
             Tipo: tipo ?? string.Empty,
             Motivos: motivos ?? Array.Empty<string>()
         );
@@ -51,6 +51,26 @@ public static class FiiMapper
 
 
 
+
+    public static FiiProventosDto CalcularProventos(decimal cotacao, decimal dividendoPorCota12m, int qtdCotas)
+    {
+        if (qtdCotas < 0)
+            throw new ArgumentOutOfRangeException(nameof(qtdCotas), "A quantidade de cotas não pode ser negativa.");
+
+        var proventoMensal = CalcularProventoMensalPeloDivCota(dividendoPorCota12m);
+        var proventoDiario = CalcularProventoDiario(proventoMensal);
+        var qtdCotasNumeroMagico = CalcularQtdCotasNumeroMagico(cotacao, proventoMensal);
+        var investirParaNumeroMagico = CalcularValorParaNumeroMagico(qtdCotasNumeroMagico, cotacao);
+
+        return new FiiProventosDto(
+            ProventoMensalPorCota: proventoMensal,
+            ProventoDiarioPorCota: proventoDiario,
+            ReceberPorMes: CalcularReceberPorMes(proventoMensal, qtdCotas),
+            ReceberPorDia: CalcularReceberPorDia(proventoDiario, qtdCotas),
+            QtdCotasNumeroMagico: qtdCotasNumeroMagico,
+            InvestirParaNumeroMagico: investirParaNumeroMagico
+        );
+    }
 
     private static decimal CalcularProventoMensalPeloDivCota(decimal dividendoPorCota12m)
     {
@@ -81,5 +101,17 @@ public static class FiiMapper
     {
         if (qtdCotasNumeroMagico <= 0 || cotacao <= 0) return 0m;
         return Math.Round(qtdCotasNumeroMagico * cotacao, 2);
+    }
+
+    private static decimal CalcularReceberPorMes(decimal proventoMensalPorCota, int qtdCotas)
+    {
+        if (qtdCotas <= 0 || proventoMensalPorCota <= 0) return 0m;
+        return Math.Round(proventoMensalPorCota * qtdCotas, 2);
+    }
+
+    private static decimal CalcularReceberPorDia(decimal proventoDiarioPorCota, int qtdCotas)
+    {
+        if (qtdCotas <= 0 || proventoDiarioPorCota <= 0) return 0m;
+        return Math.Round(proventoDiarioPorCota * qtdCotas, 4);
     }
 }

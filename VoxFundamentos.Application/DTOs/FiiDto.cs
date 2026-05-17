@@ -4,7 +4,7 @@ public sealed record FiiDto(
     decimal RankLevel,
     string Papel,
     string Segmento,
-    decimal Cotacao,
+    decimal PrecoParaComprar,
     decimal FfoYield,
     decimal DividendYield,
     decimal Pvp,
@@ -19,8 +19,11 @@ public sealed record FiiDto(
     decimal DyMensal,
     decimal ProventoMensalPorCota,
     decimal ProventoDiarioPorCota,
+    decimal ReceberPorMes,
+    decimal ReceberPorDia,
     int QtdCotasNumeroMagico,
     decimal ValorParaNumeroMagico,
+    decimal InvestirParaNumeroMagico,
     string Tipo,
     string[] Motivos
 );

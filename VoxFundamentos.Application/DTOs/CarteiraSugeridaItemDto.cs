@@ -6,13 +6,17 @@ public record CarteiraSugeridaItemDto(
     decimal Score,        // 0..10
     string Risco,         // Conservador | Moderado | Arrojado
     decimal PesoPercentual,
-    decimal Cotacao,
+    decimal PrecoParaComprar,
     decimal DividendYield,
     decimal Pvp,
     decimal Liquidez,
     decimal ValorMercado,
     string? Segmento,
-    string[] Motivos
+    string[] Motivos,
+    decimal ReceberPorMes,
+    decimal ReceberPorDia,
+    int QtdCotasNumeroMagico,
+    decimal InvestirParaNumeroMagico
 );
 
 
