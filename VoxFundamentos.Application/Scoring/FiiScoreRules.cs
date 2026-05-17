@@ -233,4 +233,94 @@ public static class FiiScoreRules
             f.DividendYield >= 9m &&
             f.Pvp <= 1.10m;
     }
+
+    /// <summary>
+    /// Gera motivos explicativos completos para o Top 10:
+    /// substitui os motivos originais (só negativos) por uma descrição
+    /// com pontos fortes e pontos de atenção baseados nos indicadores do FII.
+    /// </summary>
+    public static string[] GerarMotivosTop10(FiiRankingDto f)
+    {
+        var motivos = new List<string>();
+        var tipo = f.Tipo?.ToUpperInvariant() ?? "TIJOLO";
+
+        if (f.Score >= 8.0m)
+            motivos.Add($"Score excelente ({f.Score:F2}/10) — entre os melhores do ranking.");
+        else if (f.Score >= 7.0m)
+            motivos.Add($"Score sólido ({f.Score:F2}/10) — bom equilíbrio de indicadores.");
+        else if (f.Score >= 6.5m)
+            motivos.Add($"Score adequado ({f.Score:F2}/10) — dentro da janela de risco confiável.");
+
+        var perfil = ClassificarPerfil(f);
+        if (perfil == "Ancoragem")
+            motivos.Add("Perfil Ancoragem: score alto e risco conservador — ideal para base de carteira.");
+        else if (perfil == "Risco Controlado")
+            motivos.Add("Perfil Risco Controlado: bom DY, liquidez e valor de mercado adequados.");
+        else if (perfil == "Potencial")
+            motivos.Add("Perfil Potencial: bom score com possibilidade de valorização de cota.");
+
+        if (tipo == "PAPEL")
+        {
+            if (f.DividendYield >= 9m && f.DividendYield <= 13.5m)
+                motivos.Add($"DY de {f.DividendYield:F2}% — faixa ideal para fundo de papel.");
+            else if (f.DividendYield >= 8m)
+                motivos.Add($"DY de {f.DividendYield:F2}% — acima do mínimo exigido para papel.");
+        }
+        else
+        {
+            if (f.DividendYield >= 8m && f.DividendYield <= 11m)
+                motivos.Add($"DY de {f.DividendYield:F2}% — faixa ideal para fundo de tijolo.");
+            else if (f.DividendYield >= 7m)
+                motivos.Add($"DY de {f.DividendYield:F2}% — rendimento competitivo.");
+        }
+
+        if (f.Pvp >= 0.95m && f.Pvp <= 1.05m)
+            motivos.Add($"P/VP de {f.Pvp:F2} — cota negociando próximo ao valor patrimonial.");
+        else if (f.Pvp < 0.95m && f.Pvp >= 0.85m)
+            motivos.Add($"P/VP de {f.Pvp:F2} — cota com desconto sobre o patrimônio (oportunidade).");
+        else if (f.Pvp < 0.85m)
+            motivos.Add($"P/VP de {f.Pvp:F2} — desconto relevante; avaliar motivo do desconto.");
+
+        if (f.Liquidez >= 2_000_000m)
+            motivos.Add($"Liquidez de R$ {f.Liquidez / 1_000_000m:F1}M/dia — alta negociabilidade.");
+        else if (f.Liquidez >= 1_000_000m)
+            motivos.Add($"Liquidez de R$ {f.Liquidez / 1_000_000m:F1}M/dia — boa negociabilidade.");
+
+        if (f.ValorMercado >= 2_000_000_000m)
+            motivos.Add($"Patrimônio de R$ {f.ValorMercado / 1_000_000_000m:F1}B — fundo grande e consolidado.");
+        else if (f.ValorMercado >= 1_000_000_000m)
+            motivos.Add($"Patrimônio de R$ {f.ValorMercado / 1_000_000_000m:F1}B — porte relevante no mercado.");
+
+        if (tipo != "PAPEL")
+        {
+            if (f.VacanciaMedia <= 2m)
+                motivos.Add($"Vacância de {f.VacanciaMedia:F2}% — praticamente plena ocupação.");
+            else if (f.VacanciaMedia <= 5m)
+                motivos.Add($"Vacância de {f.VacanciaMedia:F2}% — ocupação excelente.");
+            else if (f.VacanciaMedia <= 10m)
+                motivos.Add($"Vacância de {f.VacanciaMedia:F2}% — ocupação saudável.");
+        }
+
+        if (tipo == "TIJOLO" && f.QuantidadeImoveis >= 10)
+            motivos.Add($"{f.QuantidadeImoveis} imóveis no portfólio — boa diversificação de ativos.");
+        else if (tipo == "TIJOLO" && f.QuantidadeImoveis >= 5)
+            motivos.Add($"{f.QuantidadeImoveis} imóveis no portfólio — diversificação moderada.");
+
+        if (tipo != "PAPEL" && f.VacanciaMedia > 10m)
+            motivos.Add($"⚠ Vacância de {f.VacanciaMedia:F2}% — acima de 10%, risco de queda de renda.");
+
+        if (f.Pvp > 1.15m)
+            motivos.Add($"⚠ P/VP de {f.Pvp:F2} — cota negociando com prêmio elevado sobre o patrimônio.");
+
+        if (tipo == "PAPEL" && f.DividendYield > 16m)
+            motivos.Add($"⚠ DY de {f.DividendYield:F2}% — rendimento muito alto pode indicar risco de crédito.");
+
+        if (f.ValorMercado < 1_000_000_000m)
+            motivos.Add("⚠ Patrimônio abaixo de R$ 1B — fundo menor, maior volatilidade potencial.");
+
+        if (f.Liquidez < 1_000_000m)
+            motivos.Add($"⚠ Liquidez de R$ {f.Liquidez / 1_000m:F0}k/dia — moderada; pode ter spread maior.");
+
+        return motivos.ToArray();
+    }
 }
